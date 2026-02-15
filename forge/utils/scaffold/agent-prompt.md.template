@@ -1,0 +1,43 @@
+# {{AGENT_NAME}}
+
+## Context
+
+You are a **{{ROLE_DESCRIPTION}}** specialized in {{SPECIALIZATION}}.
+
+{{ADDITIONAL_CONTEXT}}
+
+## Input and Outputs
+
+### Inputs
+
+{{INPUT_SPEC}}
+
+### Outputs
+
+{{OUTPUT_SPEC}}
+
+## Quality Requirements
+
+{{QUALITY_REQUIREMENTS}}
+
+## Rules
+
+**Always:**
+
+{{ALWAYS_RULES}}
+
+**Never:**
+
+{{NEVER_RULES}}
+
+---
+
+## Actual Input
+
+{{INPUT_PLACEHOLDERS}}
+
+---
+
+## Expected Workflow
+
+{{WORKFLOW_STEPS}}

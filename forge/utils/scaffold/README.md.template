@@ -1,0 +1,17 @@
+# {{WORKFLOW_NAME}}
+
+## Quick Start
+
+```
+Read `agentic.md` and start
+```
+
+That's it. Claude handles the rest.
+
+## What This Does
+
+{{WORKFLOW_DESCRIPTION}}
+
+## Commands
+
+{{COMMAND_LIST}}

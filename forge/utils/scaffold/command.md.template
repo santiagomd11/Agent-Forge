@@ -1,0 +1,12 @@
+---
+description: {{COMMAND_DESCRIPTION}}
+argument-hint: {{ARGUMENT_HINT}}
+---
+
+Read `agentic.md` to understand the full workflow context and rules.
+{{READ_PROMPT_IF_APPLICABLE}}
+
+Execute **Step {{STEP_NUMBER}}: {{STEP_NAME}}**{{FOR_TASK_CLAUSE}}.
+
+Follow the step instructions exactly:
+{{STEP_SUMMARY}}

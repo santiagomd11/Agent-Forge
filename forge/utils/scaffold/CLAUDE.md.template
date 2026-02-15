@@ -1,0 +1,27 @@
+# {{WORKFLOW_NAME}}
+
+## Project Structure
+
+```
+{{STRUCTURE_TREE}}
+```
+
+## How to Use
+
+Start the full workflow:
+```
+/{{START_COMMAND}}
+```
+
+Or run individual steps:
+```
+{{COMMAND_LIST_WITH_DESCRIPTIONS}}
+```
+
+## Key Rules
+
+{{RULES_LIST}}
+
+## Naming Conventions
+
+{{NAMING_CONVENTIONS}}

@@ -1,0 +1,66 @@
+# {{WORKFLOW_NAME}} — Workflow Orchestrator
+
+## Trigger Commands
+
+- `{{TRIGGER_1}}`
+- `{{TRIGGER_2}}`
+
+---
+
+## Workflow Overview
+
+```
+{{WORKFLOW_DIAGRAM}}
+```
+
+---
+
+{{FOR_EACH_STEP}}
+
+## Step {{STEP_NUMBER}}: {{STEP_NAME}}
+
+{{STEP_DESCRIPTION}}
+
+**Read:** `Prompts/{{AGENT_FILE}}` <!-- if applicable -->
+
+**Workflow:**
+
+1. {{ACTION_1}}
+2. {{ACTION_2}}
+3. {{ACTION_N}}
+
+**Save:** {{OUTPUT_FILES}}
+
+---
+
+{{END_FOR_EACH_STEP}}
+
+## After Each Step
+
+**ALWAYS ask for user approval before saving/marking complete:**
+
+1. Show output to user
+2. Ask: "Does this look good? Any changes needed?"
+3. **Wait for user approval**
+   - If changes requested → Modify and show again
+   - If approved → Continue
+4. Save files
+5. Confirm: "Saved"
+
+**NEVER proceed to the next step without user confirmation.**
+
+---
+
+## Output Structure
+
+```
+{{OUTPUT_TREE}}
+```
+
+---
+
+## Quality Checks
+
+| Step | Check |
+|------|-------|
+{{QUALITY_CHECKS}}

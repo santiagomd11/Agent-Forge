@@ -31,7 +31,7 @@ In `agentic.md`, the template copy step:
 
 1. Copy template to task directory:
    ```
-   cp -r forge/utils/{template-name}/ output/{task-id}/
+   cp -r agent/utils/{template-name}/ output/{task-id}/
    ```
 2. Initialize fresh state:
    ```

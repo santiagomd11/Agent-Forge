@@ -15,8 +15,16 @@ project-scaffold/
 │       ├── generate-code.md
 │       └── validate-project.md
 ├── Prompts/                           # 2 specialized agent prompts
-│   ├── 1. Software Architect.md
-│   └── 2. Code Generator.md
+│   ├── 01_Software_Architect.md
+│   └── 02_Code_Generator.md
+├── scripts/                           # Utility scripts
+│   ├── src/
+│   ├── tests/
+│   └── README.md
+├── utils/
+│   ├── code/
+│   └── docs/
+├── requirements.txt
 ├── templates/
 │   └── project-template/              # Base template for generated projects
 │       └── README.md
@@ -45,6 +53,7 @@ Or run individual steps:
 - No actual code execution during generation. Only file creation
 - All generated code uses the template in `templates/project-template/` as base
 - Follow established conventions for the chosen language/framework
+- Scripts require a Python venv: `python3 -m venv scripts/.venv && source scripts/.venv/bin/activate && pip install -r requirements.txt`
 - No external dependencies beyond what the template provides
 - Generated projects go into `output/{project-name}/`
 - Every generated project must include: README.md, src/ directory, tests/ directory, config files, .gitignore
@@ -52,6 +61,6 @@ Or run individual steps:
 ## Naming Conventions
 
 - Slash commands: `kebab-case` (e.g., `start-project.md`)
-- Agent prompts in `Prompts/`: numbered (e.g., `1. Software Architect.md`)
+- Agent prompts in `Prompts/`: zero-padded with underscores (e.g., `01_Software_Architect.md`)
 - Template placeholders: `{{PLACEHOLDER_NAME}}` (double curly braces, UPPER_SNAKE_CASE)
 - Output folders: `kebab-case` for project names

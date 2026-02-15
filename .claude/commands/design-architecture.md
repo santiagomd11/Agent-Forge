@@ -3,8 +3,8 @@ description: Design the workflow architecture based on gathered requirements (St
 argument-hint: [workflow-name]
 ---
 
-Read `forge/agentic.md` to understand the full workflow context and rules.
-Read `forge/Prompts/1. Workflow Architect.md` for architecture design guidance.
+Read `agent/agentic.md` to understand the full workflow context and rules.
+Read `agent/Prompts/01_Workflow_Architect.md` for architecture design guidance.
 
 Execute **Step 2: Design Architecture** for workflow "$ARGUMENTS".
 

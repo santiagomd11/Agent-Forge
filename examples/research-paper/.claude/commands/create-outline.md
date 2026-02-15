@@ -4,7 +4,7 @@ argument-hint: [paper-topic]
 ---
 
 Read `agentic.md` for context.
-Read `Prompts/2. Outline Architect.md` for outline guidance.
+Read `Prompts/02_Outline_Architect.md` for outline guidance.
 
 Execute **Step 3: Outline Generation** for paper "$ARGUMENTS".
 Generate outline with thesis and section summaries. Present for approval.

@@ -12,9 +12,9 @@ When different steps in the workflow require fundamentally different expertise o
 
 ```
 Prompts/
-├── 1. Agent Name.md
-├── 2. Agent Name.md
-└── 3. Agent Name.md
+├── 01_Agent_Name.md
+├── 02_Agent_Name.md
+└── 03_Agent_Name.md
 ```
 
 Each prompt follows a canonical template:
@@ -30,7 +30,7 @@ Each prompt follows a canonical template:
 
 ## Key Conventions
 
-1. Files are numbered to indicate the order they are first used: `1. Agent Name.md`
+1. Files are zero-padded and use underscores to indicate the order they are first used: `01_Agent_Name.md`
 2. Each agent is **self-contained**, it should work without knowledge of other agents
 3. Agents are organized by **expertise area**, not by step (one agent can serve multiple steps)
 4. The canonical template has 7 sections that must all be present

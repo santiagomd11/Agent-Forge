@@ -27,8 +27,8 @@ description: {Short description of what this command does}
 argument-hint: {Expected arguments, e.g., [task-id]}
 ---
 
-Read `forge/agentic.md` to understand the full workflow context and rules.
-Read `forge/Prompts/{N}. {Agent Name}.md` for guidance. <!-- if applicable -->
+Read `agent/agentic.md` to understand the full workflow context and rules.
+Read `agent/Prompts/{N}. {Agent Name}.md` for guidance. <!-- if applicable -->
 
 Execute **Step {N}: {Step Name}**{for task "$ARGUMENTS"}.
 

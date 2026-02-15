@@ -14,8 +14,8 @@ The framework uses the same architectural patterns it teaches and generates. Its
 
 | Agent Forge's Own Structure | What It Generates |
 |---------------------------|-------------------|
-| `forge/agentic.md` (orchestrator) | `output/{name}/agentic.md` (orchestrator) |
-| `forge/Prompts/` (agent prompts) | `output/{name}/Prompts/` (agent prompts) |
+| `agent/agentic.md` (orchestrator) | `output/{name}/agentic.md` (orchestrator) |
+| `agent/Prompts/` (agent prompts) | `output/{name}/Prompts/` (agent prompts) |
 | `.claude/commands/` (slash commands) | `output/{name}/.claude/commands/` (slash commands) |
 | `README.md` + `CLAUDE.md` | `output/{name}/README.md` + `CLAUDE.md` |
 | Approval gates ⏸ in its workflow | Approval gates ⏸ in generated workflows |

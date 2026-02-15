@@ -59,7 +59,7 @@ Who is the target audience for the report?
 
 **Purpose:** Run automated profiling and interpret the results.
 
-**Read:** `Prompts/1. Data Profiler.md`
+**Read:** `Prompts/01_Data_Profiler.md`
 
 **Workflow:**
 
@@ -93,7 +93,7 @@ Who is the target audience for the report?
 
 **Purpose:** Design the analysis plan based on profiling results and user questions.
 
-**Read:** `Prompts/2. Analysis Architect.md`
+**Read:** `Prompts/02_Analysis_Architect.md`
 
 **Workflow:**
 
@@ -166,7 +166,7 @@ Who is the target audience for the report?
 
 **Purpose:** Compile analysis outputs into a structured markdown report.
 
-**Read:** `Prompts/3. Report Writer.md`
+**Read:** `Prompts/03_Report_Writer.md`
 
 **Workflow:**
 

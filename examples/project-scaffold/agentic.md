@@ -63,7 +63,7 @@ Who is the target audience or user of this project?
 
 **Purpose:** Design the project folder structure, component breakdown, and dependency map.
 
-**Read:** `Prompts/1. Software Architect.md`
+**Read:** `Prompts/01_Software_Architect.md`
 
 **Workflow:**
 
@@ -105,7 +105,7 @@ Entry Point: {file path}
 
 **Purpose:** Generate all starter code files based on the approved architecture.
 
-**Read:** `Prompts/2. Code Generator.md`
+**Read:** `Prompts/02_Code_Generator.md`
 
 **Workflow:**
 

@@ -73,7 +73,7 @@ A **Review Report** containing:
 | # | Check | How to Verify |
 |---|-------|---------------|
 | 16 | No references to files outside the project directory | Content search for absolute paths or parent traversals |
-| 17 | No references to Agent Forge framework files | Content search for "forge/", "patterns/", "examples/" |
+| 17 | No references to Agent Forge framework files | Content search for "agent/", "patterns/", "examples/" |
 | 18 | The workflow is runnable from its own directory | Verify all references are relative |
 
 ## Clarifications
@@ -83,20 +83,20 @@ A **Review Report** containing:
 A workflow is self-contained when someone can copy its folder anywhere and it works. Watch for these common violations:
 
 **Violations (fail the check):**
-- `Read forge/Prompts/...` references Agent Forge's own files, not the workflow's
+- `Read agent/Prompts/...` references Agent Forge's own files, not the workflow's
 - `../../shared/utils.py` uses parent directory traversal
 - `/home/user/templates/...` uses absolute paths
 - "See the patterns/ directory for details" references Agent Forge documentation
 
 **Not violations (pass the check):**
-- `Read Prompts/1. Analyst.md` is a relative path within the workflow project
+- `Read Prompts/01_Analyst.md` is a relative path within the workflow project
 - `Read agentic.md` references the workflow's own orchestrator
 - `.claude/commands/start.md` is a relative path within the project
 
 ### Bidirectional Cross-Reference Verification
 
-When agentic.md says "Read Prompts/1. Research Analyst.md", verify BOTH:
-1. The file `Prompts/1. Research Analyst.md` actually exists
+When agentic.md says "Read Prompts/01_Research_Analyst.md", verify BOTH:
+1. The file `Prompts/01_Research_Analyst.md` actually exists
 2. The prompt content is consistent with how agentic.md describes the step (if agentic.md says the agent "designs architectures" but the prompt says it "writes code", that is a mismatch)
 
 Same for commands: if `design-architecture.md` says "Execute Step 2: Design Architecture", verify that Step 2 in agentic.md is actually called "Design Architecture" and not something else.
@@ -178,10 +178,10 @@ Review Report: data-analysis
 | 11 | No circular dependencies | PASS | |
 | 12 | At least one approval gate | PASS | |
 | 13 | Output dirs would be created | PASS | |
-| 14 | Agent prompts have all sections | FAIL | Prompts/2. Analysis Architect.md is missing the "Actual Input" section. Add it with placeholders for the data profile and analysis goals. |
+| 14 | Agent prompts have all sections | FAIL | Prompts/02_Analysis_Architect.md is missing the "Actual Input" section. Add it with placeholders for the data profile and analysis goals. |
 | 15 | CLAUDE.md lists all commands | FAIL | CLAUDE.md lists 5 commands but 7 exist. Add /run-analysis and /generate-report to the command list. |
 | 16 | No external file references | PASS | |
-| 17 | No Agent Forge references | FAIL | agentic.md Step 3 says "Read forge/Prompts/2. Analysis Architect.md". Change to "Read Prompts/2. Analysis Architect.md" (remove "forge/" prefix). |
+| 17 | No Agent Forge references | FAIL | agentic.md Step 3 says "Read agent/Prompts/02_Analysis_Architect.md". Change to "Read Prompts/02_Analysis_Architect.md" (remove "agent/" prefix). |
 | 18 | Runnable from own directory | PASS | |
 
 Verdict: Needs Fixes (13/18 passed)
@@ -235,7 +235,7 @@ Verdict: Needs Fixes
 
 - Skip checklist items
 - Mark items as "partial pass", it is pass or fail
-- Give vague remediation ("fix the reference", instead say: "add `Read Prompts/1. Research Analyst.md` to Step 2 in agentic.md")
+- Give vague remediation ("fix the reference", instead say: "add `Read Prompts/01_Research_Analyst.md` to Step 2 in agentic.md")
 - Modify the project yourself, only report findings
 
 ---

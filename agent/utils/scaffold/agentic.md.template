@@ -32,7 +32,8 @@
 
 {{STEP_DESCRIPTION}}
 
-**Read:** `Prompts/{{AGENT_FILE}}` <!-- Only if this step uses a specialized agent. Remove this line for direct/mechanical steps. -->
+**Read:** `Prompts/{{AGENT_FILE}}` <!-- Only if this step uses a specialized agent. Remove this line for direct/mechanical steps.
+     Agent file uses NN_Agent_Name.md format (e.g., 01_Research_Analyst.md). -->
 
 **Workflow:**
 
@@ -72,7 +73,11 @@
 ```
 <!-- Show the complete folder/file tree that the workflow produces.
      Use standard tree notation (├──, └──, │).
-     Include every file and directory the user should expect. -->
+     Include every file and directory the user should expect.
+     Standard project directories include: scripts/ (with src/, tests/, README.md),
+     utils/ (with code/, docs/), and requirements.txt at the root.
+     If scripts/ exist, remind that they require a venv:
+     python3 -m venv scripts/.venv && source scripts/.venv/bin/activate -->
 
 ---
 

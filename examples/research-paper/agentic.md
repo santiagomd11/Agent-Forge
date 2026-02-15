@@ -58,7 +58,7 @@ What is the desired length? (e.g., "short, 5 pages", "medium, 10-15 pages",
 
 **Purpose:** Find and evaluate authoritative sources for the paper.
 
-**Read:** `Prompts/1. Research Analyst.md`
+**Read:** `Prompts/01_Research_Analyst.md`
 
 **Workflow:**
 
@@ -79,7 +79,7 @@ What is the desired length? (e.g., "short, 5 pages", "medium, 10-15 pages",
 
 **Purpose:** Create a structured outline with a clear thesis and section plan.
 
-**Read:** `Prompts/2. Outline Architect.md`
+**Read:** `Prompts/02_Outline_Architect.md`
 
 **Workflow:**
 
@@ -101,7 +101,7 @@ What is the desired length? (e.g., "short, 5 pages", "medium, 10-15 pages",
 
 **Purpose:** Write each section of the paper with proper citations and academic rigor.
 
-**Read:** `Prompts/3. Academic Writer.md`
+**Read:** `Prompts/03_Academic_Writer.md`
 
 **Workflow:**
 

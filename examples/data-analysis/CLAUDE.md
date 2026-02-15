@@ -17,17 +17,23 @@ data-analysis/
 │       ├── generate-report.md
 │       └── review-delivery.md
 ├── Prompts/                           # 3 specialized agent prompts
-│   ├── 1. Data Profiler.md
-│   ├── 2. Analysis Architect.md
-│   └── 3. Report Writer.md
+│   ├── 01_Data_Profiler.md
+│   ├── 02_Analysis_Architect.md
+│   └── 03_Report_Writer.md
 ├── scripts/                           # Python tooling
+│   ├── src/
+│   ├── tests/
+│   ├── README.md
 │   ├── requirements.txt
 │   ├── profile_data.py
 │   └── generate_report.py
 ├── utils/
-│   └── analysis-template/             # Copied per task, never modified
-│       ├── analysis.py
-│       └── requirements.txt
+│   ├── analysis-template/             # Copied per task, never modified
+│   │   ├── analysis.py
+│   │   └── requirements.txt
+│   ├── code/
+│   └── docs/
+├── requirements.txt
 └── tasks/                             # Output organized by date
 ```
 
@@ -62,6 +68,6 @@ Or run individual steps:
 ## Naming Conventions
 
 - Slash commands: `kebab-case` (e.g., `start-analysis.md`)
-- Agent prompts in `Prompts/`: numbered (e.g., `1. Data Profiler.md`)
+- Agent prompts in `Prompts/`: zero-padded with underscores (e.g., `01_Data_Profiler.md`)
 - Task folders: `tasks/YYYY-MM-DD/{descriptive-id}/`
 - Output files within tasks follow the numbered naming pattern (e.g., `01_dataset_info.md`)

@@ -12,15 +12,22 @@ Agent-Forge/
 │   ├── commands/                      # 8 slash commands (one per step + master)
 │   └── agents/
 │       └── senior-prompt-engineer.md  # Reusable prompt engineering agent
-├── forge/                             # Core engine
+├── agent/                             # Core engine
 │   ├── agentic.md                     # 7-step meta-orchestrator
 │   ├── README.md                      # Usage instructions
+│   ├── requirements.txt               # Python dependencies
 │   ├── Prompts/                       # 3 specialized agent prompts
-│   │   ├── 1. Workflow Architect.md
-│   │   ├── 2. Prompt Writer.md
-│   │   └── 3. Quality Reviewer.md
+│   │   ├── 01_Workflow_Architect.md
+│   │   ├── 02_Prompt_Writer.md
+│   │   └── 03_Quality_Reviewer.md
+│   ├── scripts/                       # Automation scripts
+│   │   ├── src/
+│   │   ├── tests/
+│   │   └── README.md
 │   └── utils/
-│       └── scaffold/                  # Templates for generated projects
+│       ├── scaffold/                  # Templates for generated projects
+│       ├── code/                      # Code utilities
+│       └── docs/                      # Documentation utilities
 ├── patterns/                          # 8 documented workflow patterns
 ├── examples/                          # 3 example workflows
 │   ├── research-paper/
@@ -49,9 +56,9 @@ Or run individual steps:
 
 ## Key Rules
 
-- Always read `forge/agentic.md` fully before starting any step
+- Always read `agent/agentic.md` fully before starting any step
 - Never skip approval gates (marked with ⏸)
-- Always use `forge/utils/scaffold/` templates as the base for generated files. Do not create from scratch.
+- Always use `agent/utils/scaffold/` templates as the base for generated files. Do not create from scratch.
 - Generated workflows go into `output/{workflow-name}/`
 - Every generated workflow must include: README.md, agentic.md, at least one agent prompt, at least one slash command
 - Follow the patterns documented in `patterns/` for consistency
@@ -62,7 +69,7 @@ Or run individual steps:
 ## Naming Conventions
 
 - Slash commands: `kebab-case` (e.g., `create-workflow.md`)
-- Agent prompts in `Prompts/`: numbered (e.g., `1. Agent Name.md`)
+- Agent prompts in `Prompts/`: zero-padded with underscores (e.g., `01_Agent_Name.md`)
 - Template placeholders: `{{PLACEHOLDER_NAME}}` (double curly braces, UPPER_SNAKE_CASE)
 - Output folders: `kebab-case` for workflow names
 

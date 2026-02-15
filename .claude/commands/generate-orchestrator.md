@@ -3,9 +3,9 @@ description: Generate the agentic.md orchestrator for the new workflow (Step 3).
 argument-hint: [workflow-name]
 ---
 
-Read `forge/agentic.md` for context.
-Read `forge/utils/scaffold/agentic.md.template` for the structural template.
-Read `forge/Prompts/2. Prompt Writer.md` for prompt writing guidance.
+Read `agent/agentic.md` for context.
+Read `agent/utils/scaffold/agentic.md.template` for the structural template.
+Read `agent/Prompts/02_Prompt_Writer.md` for prompt writing guidance.
 
 Execute **Step 3: Generate Orchestrator** for workflow "$ARGUMENTS".
 

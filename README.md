@@ -2,7 +2,7 @@
 
 A meta-framework that uses agentic workflows to create agentic workflows.
 
-## forge/ - Workflow Engine
+## agent/ - Workflow Engine
 
 Orchestrator for designing and generating complete agentic workflow projects.
 
@@ -36,7 +36,7 @@ Individual steps:
 ### Other AI tools (Cursor, Windsurf, etc.)
 
 ```bash
-cd forge
+cd agent
 
 # Point the tool at agentic.md:
 # "Read agentic.md and start"
@@ -44,7 +44,7 @@ cd forge
 
 ## Structure
 
-- `forge/`, core engine (orchestrator, agents, utils)
+- `agent/`, core engine (orchestrator, agents, utils)
 - `patterns/`, documentation of reusable workflow patterns
 - `examples/`, example workflows showing the architecture in action
 - `output/`, where generated workflow projects land

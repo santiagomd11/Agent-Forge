@@ -4,7 +4,7 @@ argument-hint: [task-folder-path]
 ---
 
 Read `agentic.md` for context.
-Read `Prompts/3. Report Writer.md` for report writing guidance.
+Read `Prompts/03_Report_Writer.md` for report writing guidance.
 
 Execute **Step 5: Generate Report** for task "$ARGUMENTS".
 Run `scripts/generate_report.py` against the task folder, then enhance

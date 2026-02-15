@@ -3,8 +3,8 @@ description: Self-review the generated workflow for completeness and quality (St
 argument-hint: [workflow-name]
 ---
 
-Read `forge/agentic.md` for context.
-Read `forge/Prompts/3. Quality Reviewer.md` for review criteria.
+Read `agent/agentic.md` for context.
+Read `agent/Prompts/03_Quality_Reviewer.md` for review criteria.
 
 Execute **Step 7: Review and Deliver** for workflow "$ARGUMENTS".
 

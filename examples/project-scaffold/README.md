@@ -2,16 +2,25 @@
 
 A workflow for scaffolding new code projects with architecture-first design.
 
-## Quick Start
+### Claude Code (recommended)
 
-Read `agentic.md` and start
+```
+/start-project             # Full workflow from scratch
+```
 
-## Commands
+Individual steps:
 
 | Command | Step | Description |
 |---------|------|-------------|
-| /start-project | All | Full workflow: runs Steps 1-4 |
-| /define-requirements | 1 | Gather project requirements |
-| /design-architecture | 2 | Design project structure |
-| /generate-code | 3 | Generate starter code |
-| /validate-project | 4 | Validate and deliver |
+| `/start-project` | All | Full workflow: runs Steps 1-4 |
+| `/define-requirements` | 01 | Gather project requirements |
+| `/design-architecture` | 02 | Design project structure |
+| `/generate-code` | 03 | Generate starter code |
+| `/validate-project` | 04 | Validate and deliver |
+
+### Other AI tools (Cursor, Windsurf, etc.)
+
+```bash
+# Point the tool at agentic.md:
+# "Read agentic.md and start"
+```

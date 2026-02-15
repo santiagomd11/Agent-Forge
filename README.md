@@ -1,4 +1,4 @@
-# Lazy-Agent
+# Agent Forge
 
 A meta-framework that uses agentic workflows to create agentic workflows.
 
@@ -12,7 +12,7 @@ That's it. Claude handles the rest.
 
 ## What This Does
 
-Lazy-Agent interviews you about the workflow you need, designs its architecture, and generates a complete agentic workflow project — including orchestrator, specialized agents, slash commands, and templates.
+Agent Forge interviews you about the workflow you need, designs its architecture, and generates a complete agentic workflow project — including orchestrator, specialized agents, slash commands, and templates.
 
 The framework itself uses the same architecture it generates. It's self-similar: AI building AI workflows using the same patterns it teaches.
 

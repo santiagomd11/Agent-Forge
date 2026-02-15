@@ -1,6 +1,6 @@
-# Forge — Lazy-Agent Core Engine
+# Forge — Agent Forge Core Engine
 
-This directory contains the core engine that powers Lazy-Agent.
+This directory contains the core engine that powers Agent Forge.
 
 ## Contents
 

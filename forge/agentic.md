@@ -1,4 +1,4 @@
-# Lazy-Agent — Meta-Workflow Orchestrator
+# Agent Forge — Meta-Workflow Orchestrator
 
 ## Trigger Commands
 

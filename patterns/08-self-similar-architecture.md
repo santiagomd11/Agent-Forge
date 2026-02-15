@@ -10,9 +10,9 @@ The framework uses the same architectural patterns it teaches and generates. Its
 - Tools that create tools
 - Systems that bootstrap other systems
 
-## How Lazy-Agent Achieves This
+## How Agent Forge Achieves This
 
-| Lazy-Agent's Own Structure | What It Generates |
+| Agent Forge's Own Structure | What It Generates |
 |---------------------------|-------------------|
 | `forge/agentic.md` (orchestrator) | `output/{name}/agentic.md` (orchestrator) |
 | `forge/Prompts/` (agent prompts) | `output/{name}/Prompts/` (agent prompts) |
@@ -20,7 +20,7 @@ The framework uses the same architectural patterns it teaches and generates. Its
 | `README.md` + `CLAUDE.md` | `output/{name}/README.md` + `CLAUDE.md` |
 | Approval gates ⏸ in its workflow | Approval gates ⏸ in generated workflows |
 
-The framework doesn't just document the patterns — it demonstrates them. Every file in Lazy-Agent is a living example of the pattern it represents.
+The framework doesn't just document the patterns — it demonstrates them. Every file in Agent Forge is a living example of the pattern it represents.
 
 ## The Meta-Principle
 

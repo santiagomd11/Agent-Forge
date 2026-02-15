@@ -1,11 +1,11 @@
-# Lazy-Agent
+# Agent Forge
 
-Lazy-Agent is a meta-framework for creating agentic workflows. It IS itself an agentic workflow.
+Agent Forge is a meta-framework for creating agentic workflows. It IS itself an agentic workflow.
 
 ## Project Structure
 
 ```
-Lazy-Agent/
+Agent-Forge/
 ├── README.md                          # Entry point
 ├── CLAUDE.md                          # This file — project rules
 ├── .claude/
@@ -66,6 +66,6 @@ Or run individual steps:
 ## Quality Bar
 
 Every generated workflow must be:
-- Self-contained (runnable without Lazy-Agent)
+- Self-contained (runnable without Agent Forge)
 - Complete (orchestrator + agents + commands + README)
-- Consistent (follows the same patterns Lazy-Agent uses)
+- Consistent (follows the same patterns Agent Forge uses)

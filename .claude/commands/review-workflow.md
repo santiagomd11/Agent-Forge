@@ -4,7 +4,7 @@ argument-hint: [workflow-name]
 ---
 
 Read `agent/agentic.md` for context.
-Read `agent/Prompts/03_Quality_Reviewer.md` for review criteria.
+Read `agent/Prompts/04_Quality_Reviewer.md` for review criteria.
 
 Execute **Step 7: Review and Deliver** for workflow "$ARGUMENTS".
 

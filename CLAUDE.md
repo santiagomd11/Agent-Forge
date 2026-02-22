@@ -15,11 +15,12 @@ Agent-Forge/
 ├── agent/                             # Core engine
 │   ├── agentic.md                     # 7-step meta-orchestrator
 │   ├── README.md                      # Usage instructions
-│   ├── Prompts/                       # 3 specialized agents + fixer
+│   ├── Prompts/                       # 4 specialized agents + fixer
 │   │   ├── 00_Workflow_Fixer.md
-│   │   ├── 01_Workflow_Architect.md
-│   │   ├── 02_Prompt_Writer.md
-│   │   └── 03_Quality_Reviewer.md
+│   │   ├── 01_Senior_Prompt_Engineer.md
+│   │   ├── 02_Workflow_Architect.md
+│   │   ├── 03_Prompt_Writer.md
+│   │   └── 04_Quality_Reviewer.md
 │   ├── scripts/                       # Automation scripts
 │   │   ├── src/
 │   │   ├── tests/

@@ -70,7 +70,7 @@ Default: output/{workflow-name}/
 
 ## Step 2: Design Architecture ⏸
 
-**Read:** `agent/Prompts/01_Workflow_Architect.md`
+**Read:** `agent/Prompts/02_Workflow_Architect.md`
 
 Using the gathered requirements, design the workflow architecture:
 
@@ -116,7 +116,7 @@ Patterns Applied:
 ## Step 3: Generate Orchestrator ⏸
 
 **Read:** `agent/utils/scaffold/agentic.md.template`
-**Read:** `agent/Prompts/02_Prompt_Writer.md`
+**Read:** `agent/Prompts/03_Prompt_Writer.md`
 
 Generate the workflow's `agentic.md` using the template as structural guide:
 
@@ -141,10 +141,10 @@ Generate the workflow's `agentic.md` using the template as structural guide:
 
 ## Step 4: Generate Specialized Agents
 
-**Read:** `agent/Prompts/02_Prompt_Writer.md`
+**Read:** `agent/Prompts/03_Prompt_Writer.md`
 **Read:** `agent/utils/scaffold/agent-prompt.md.template`
 
-Optionally, invoke the **Senior Prompt Engineer** agent (available at `.claude/agents/senior-prompt-engineer.md`) for complex or domain-specific prompts that require deeper expertise. The Prompt Writer prompt covers the structural template; the Senior Prompt Engineer covers the craft of writing high-quality, production-grade prompts.
+Optionally, read the **Senior Prompt Engineer** prompt at `agent/Prompts/01_Senior_Prompt_Engineer.md` for complex or domain-specific prompts that require deeper expertise. The Prompt Writer prompt covers the structural template; the Senior Prompt Engineer covers the craft of writing high-quality, production-grade prompts.
 
 For each agent identified in Step 2:
 
@@ -180,6 +180,8 @@ For each step in the designed workflow:
 
 4. Copy the fixer agent prompt from `agent/utils/scaffold/00_Workflow_Fixer.md.template` into the generated workflow's `agent/Prompts/00_Workflow_Fixer.md`. This prompt is standard for all workflows and does not need customization.
 
+5. Copy the Senior Prompt Engineer prompt from `agent/utils/scaffold/01_Senior_Prompt_Engineer.md.template` into the generated workflow's `agent/Prompts/01_Senior_Prompt_Engineer.md`. This prompt is used by the fixer when prompt writing or rewriting is needed. It is standard for all workflows and does not need customization.
+
 **Save:** `output/{workflow-name}/.claude/commands/{command-name}.md` for each command
 
 ---
@@ -209,7 +211,7 @@ Generate the remaining project files. Every generated workflow MUST include the 
 
 ## Step 7: Review and Deliver ⏸
 
-**Read:** `agent/Prompts/03_Quality_Reviewer.md`
+**Read:** `agent/Prompts/04_Quality_Reviewer.md`
 
 Run the quality reviewer's checklist against the generated workflow:
 
@@ -231,6 +233,7 @@ Run the quality reviewer's checklist against the generated workflow:
 - [ ] agent/scripts/README.md includes venv setup instructions
 - [ ] .claude/commands/fix.md exists (standard in all workflows)
 - [ ] agent/Prompts/00_Workflow_Fixer.md exists (standard in all workflows)
+- [ ] agent/Prompts/01_Senior_Prompt_Engineer.md exists (standard in all workflows)
 
 **Fix any issues found before delivering.**
 
@@ -349,6 +352,6 @@ The `agentic.md` file is the **single source of truth** for any workflow. Slash 
 | 02 | Architecture reviewed? Patterns identified? Agents listed? |
 | 03 | Orchestrator follows template? All steps present? Gates correct? |
 | 04 | All agents generated? Each has all required sections? |
-| 05 | One command per step? Master command exists? Fix command exists? Frontmatter complete? |
+| 05 | One command per step? Master command exists? Fix command exists? Senior prompt engineer copied? Frontmatter complete? |
 | 06 | README, CLAUDE.md, agent/ (Prompts/, scripts/, utils/) created? Templates if needed? |
 | 07 | Self-review passes all checks? Workflow is self-contained? |

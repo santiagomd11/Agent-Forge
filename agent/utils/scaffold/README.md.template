@@ -22,3 +22,26 @@ Individual steps:
 # Point the tool at agentic.md:
 # "Read agentic.md and start"
 ```
+
+## Disclaimer
+
+This workflow is powered by AI. The outputs it produces may contain errors, inaccuracies, or incomplete information. Always review AI-generated content with your own judgment before using it in any final deliverable. AI is a tool to assist your work, not a replacement for human review.
+
+## Contributing
+
+1. Create a branch from `master`:
+   ```bash
+   git checkout master && git checkout -b feature/your-change
+   ```
+2. Make your changes and commit:
+   ```bash
+   git add . && git commit -m "your message"
+   ```
+3. Push and open a PR into `master`:
+   ```bash
+   git push -u origin feature/your-change
+   ```
+
+## Attribution
+
+Built with [Agent Forge](https://github.com/santiagomd11/Agent-Forge), a meta-framework for creating agentic workflows.

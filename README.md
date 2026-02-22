@@ -49,3 +49,18 @@ cd agent
 - `patterns/`, documentation of reusable workflow patterns
 - `examples/`, example workflows showing the architecture in action
 - `output/`, where generated workflow projects land
+
+## Contributing
+
+1. Create a branch from `master`:
+   ```bash
+   git checkout master && git checkout -b feature/your-change
+   ```
+2. Make your changes and commit:
+   ```bash
+   git add . && git commit -m "your message"
+   ```
+3. Push and open a PR into `master`:
+   ```bash
+   git push -u origin feature/your-change
+   ```

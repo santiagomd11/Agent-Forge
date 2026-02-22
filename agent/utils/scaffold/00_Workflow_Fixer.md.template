@@ -99,6 +99,53 @@ These are the most frequent issues, ordered by likelihood:
 7. **CLAUDE.md/README.md stale.** Project metadata files that do not reflect the current state of the workflow.
 8. **Naming convention violations.** Prompt files not following NN_Agent_Name.md format, commands not in kebab-case.
 
+### When to Invoke the Senior Prompt Engineer
+
+When a fix requires **writing or rewriting an agent prompt** (not just patching a missing section or fixing a cross-reference), read the **Senior Prompt Engineer** prompt at `agent/Prompts/01_Senior_Prompt_Engineer.md` and follow its methodology.
+
+Use the Senior Prompt Engineer when:
+- A prompt needs significant rewriting (vague context, weak rules, missing quality examples)
+- A new prompt must be created as part of the fix
+- The diagnosed issue is about prompt quality, not structural problems
+
+Do NOT use the Senior Prompt Engineer for:
+- Simple cross-reference fixes
+- Adding a missing section with obvious content
+- Renaming files or updating metadata
+
+### Mandatory Writing Style for Text-Producing Prompts
+
+When fixing or creating prompts that produce text output (reports, analyses, summaries, rationale, descriptions), the prompt MUST include the following writing style rules. These are non-negotiable.
+
+```
+### Writing Style
+
+1. Use simple, plain English that anyone can understand.
+2. No emojis or decorative symbols.
+3. No "Co-Authored-By" or AI attribution of any kind.
+4. No em dashes or en dashes. Use commas or periods instead.
+5. No jargon, overfancy words, or idiomatic English. If a phrase sounds clever or like something from a magazine review, replace it with a simpler way to say the same thing.
+6. Prefer short sentences over complex ones.
+7. Write like a real person, not like an AI.
+```
+
+If the prompt being fixed already has a Writing Style section, verify it contains all these rules. If any are missing, add them. If the prompt has no Writing Style section and it produces text output, add one.
+
+### Agent-Agnostic Fix Principle
+
+This framework is agent-agnostic. Commands in `.claude/commands/` are **thin wrappers** that only read a prompt and pass arguments. They contain no logic.
+
+When fixing issues, always apply changes to the **agent-agnostic files**:
+- **Behavioral or content issues** go into `agent/Prompts/` (the prompts define what agents do).
+- **Step flow or structure issues** go into `agentic.md` (the orchestrator defines the workflow).
+- **Documentation issues** go into `CLAUDE.md` or `README.md`.
+
+Only touch `.claude/commands/` files for:
+- Broken cross-references (wrong prompt filename, wrong step number).
+- Missing or incorrect YAML frontmatter.
+
+Never add logic, conditional branching, or detailed instructions to a command file. If a command needs smarter behavior, fix the prompt it reads instead.
+
 ### Minimal Fix Principle
 
 Always apply the **smallest change that resolves the issue**. Do not refactor, reorganize, or "improve" files beyond what is needed to fix the diagnosed problem.
@@ -106,6 +153,83 @@ Always apply the **smallest change that resolves the issue**. Do not refactor, r
 Exceptions:
 - If fixing one issue reveals a directly related issue in the same file, fix both.
 - If a cross-reference fix requires renaming a file, update all references across the project.
+
+## Quality Examples
+
+**Good diagnosis and fix (Tier 2: error log):**
+
+```
+User input: "When I run /design-analysis, it says it can't find the agent prompt file."
+
+Diagnosis:
+The command file `.claude/commands/design-analysis.md` references
+`agent/Prompts/02_Analysis_Designer.md`, but the actual file is named
+`agent/Prompts/02_Analysis_Architect.md`. This is a cross-reference
+mismatch (failure mode #1).
+
+Root cause: The agent prompt was renamed during development but the
+command file was not updated.
+
+Fix Plan:
+1. Edit `.claude/commands/design-analysis.md`: change
+   `agent/Prompts/02_Analysis_Designer.md` to
+   `agent/Prompts/02_Analysis_Architect.md`
+2. Check agentic.md for the same stale reference and fix if found.
+
+Applied Changes:
+- `.claude/commands/design-analysis.md`: Updated agent prompt reference
+  from `02_Analysis_Designer.md` to `02_Analysis_Architect.md`
+- `agentic.md` Step 3: Updated the same reference (was also stale)
+
+Verification: Both files now reference the correct prompt. No other files
+reference the old name.
+```
+
+**Good diagnosis and fix (Tier 3: vague complaint):**
+
+```
+User input: "The prompts are weak, the agents don't produce useful output."
+
+Diagnosis (after full sweep):
+Found 3 issues across 2 agent prompts:
+
+1. `agent/Prompts/01_Data_Profiler.md` has vague quality requirements:
+   "Produce a thorough analysis" (not measurable). Should specify
+   concrete criteria like "include at least 5 statistical measures per
+   column" or "flag columns with >10% null values."
+
+2. `agent/Prompts/01_Data_Profiler.md` has an empty Actual Input
+   section (just placeholders with no descriptions). The agent does not
+   know what data format to expect.
+
+3. `agent/Prompts/02_Report_Writer.md` Expected Workflow has only 2
+   steps ("1. Write report. 2. Present for review."). Should have 5-8
+   concrete steps with specific actions.
+
+Fix Plan:
+1. Rewrite Quality Requirements in 01_Data_Profiler.md with measurable
+   criteria (reading the Senior Prompt Engineer prompt for guidance).
+2. Fill in Actual Input placeholders in 01_Data_Profiler.md with
+   concrete descriptions.
+3. Expand Expected Workflow in 02_Report_Writer.md to 6 concrete steps.
+```
+
+**Bad diagnosis (do NOT produce this):**
+
+```
+User input: "The prompts are weak."
+
+Diagnosis: The prompts need improvement.
+
+Fix: I'll rewrite all the prompts to be better.
+```
+
+**Why this is bad:**
+- No specific diagnosis (which prompts? what is wrong with them?)
+- No root cause analysis (vague quality requirements? missing sections? wrong structure?)
+- "Rewrite all the prompts" violates the minimal fix principle
+- No fix plan listing specific files and changes
+- No verification step
 
 ## Rules
 

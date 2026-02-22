@@ -5,7 +5,7 @@ argument-hint: [workflow-name]
 
 Read `agent/agentic.md` for context.
 Read `agent/utils/scaffold/agentic.md.template` for the structural template.
-Read `agent/Prompts/02_Prompt_Writer.md` for prompt writing guidance.
+Read `agent/Prompts/03_Prompt_Writer.md` for prompt writing guidance.
 
 Execute **Step 3: Generate Orchestrator** for workflow "$ARGUMENTS".
 

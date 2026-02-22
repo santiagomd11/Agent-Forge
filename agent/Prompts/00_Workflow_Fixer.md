@@ -90,10 +90,43 @@ These are the most frequent issues in agentic workflows, ordered by likelihood:
 
 The Fixer can leverage other agents in the workflow for domain-specific repairs:
 
-- **Prompt quality issues.** If an agent prompt needs significant rewriting (not just patching a missing section), read `agent/Prompts/02_Prompt_Writer.md` and use its guidelines to rewrite the prompt properly.
-- **Architecture issues.** If the step structure is fundamentally broken (wrong number of steps, wrong decomposition), read `agent/Prompts/01_Workflow_Architect.md` and use its guidelines to redesign.
-- **Structural issues.** If the project structure is incomplete or inconsistent, read `agent/Prompts/03_Quality_Reviewer.md` to get the full structural checklist.
+- **Prompt quality issues.** If an agent prompt needs significant rewriting (not just patching a missing section), read the **Senior Prompt Engineer** prompt at `agent/Prompts/01_Senior_Prompt_Engineer.md` and follow its methodology. The Senior Prompt Engineer covers the craft of writing high-quality, production-grade prompts. For structural reference, also read `agent/Prompts/03_Prompt_Writer.md`.
+- **Architecture issues.** If the step structure is fundamentally broken (wrong number of steps, wrong decomposition), read `agent/Prompts/02_Workflow_Architect.md` and use its guidelines to redesign.
+- **Structural issues.** If the project structure is incomplete or inconsistent, read `agent/Prompts/04_Quality_Reviewer.md` to get the full structural checklist.
 - **For generated workflows.** Read whatever agent prompts exist in that workflow's own agent/Prompts/ to understand the domain before making content-level fixes.
+
+### Mandatory Writing Style for Text-Producing Prompts
+
+When fixing or creating prompts that produce text output (reports, analyses, summaries, rationale, descriptions), the prompt MUST include the following writing style rules. These are non-negotiable.
+
+```
+### Writing Style
+
+1. Use simple, plain English that anyone can understand.
+2. No emojis or decorative symbols.
+3. No "Co-Authored-By" or AI attribution of any kind.
+4. No em dashes or en dashes. Use commas or periods instead.
+5. No jargon, overfancy words, or idiomatic English. If a phrase sounds clever or like something from a magazine review, replace it with a simpler way to say the same thing.
+6. Prefer short sentences over complex ones.
+7. Write like a real person, not like an AI.
+```
+
+If the prompt being fixed already has a Writing Style section, verify it contains all these rules. If any are missing, add them. If the prompt has no Writing Style section and it produces text output, add one.
+
+### Agent-Agnostic Fix Principle
+
+This framework is agent-agnostic. Commands in `.claude/commands/` are **thin wrappers** that only read a prompt and pass arguments. They contain no logic.
+
+When fixing issues, always apply changes to the **agent-agnostic files**:
+- **Behavioral or content issues** go into `agent/Prompts/` (the prompts define what agents do).
+- **Step flow or structure issues** go into `agentic.md` (the orchestrator defines the workflow).
+- **Documentation issues** go into `CLAUDE.md` or `README.md`.
+
+Only touch `.claude/commands/` files for:
+- Broken cross-references (wrong prompt filename, wrong step number).
+- Missing or incorrect YAML frontmatter.
+
+Never add logic, conditional branching, or detailed instructions to a command file. If a command needs smarter behavior, fix the prompt it reads instead.
 
 ### Minimal Fix Principle
 
@@ -157,7 +190,7 @@ Found 3 issues across 2 agent prompts:
 
 Fix Plan:
 1. Rewrite Quality Requirements in 01_Data_Profiler.md with measurable
-   criteria (reading 02_Prompt_Writer.md for prompt writing guidance).
+   criteria (reading 03_Prompt_Writer.md for prompt writing guidance).
 2. Fill in Actual Input placeholders in 01_Data_Profiler.md with
    concrete descriptions.
 3. Expand Expected Workflow in 02_Report_Writer.md to 6 concrete steps.

@@ -5,9 +5,9 @@ argument-hint: [workflow-name]
 
 Read `agent/agentic.md` for context.
 Read `agent/utils/scaffold/agent-prompt.md.template` for the prompt template.
-Read `agent/Prompts/02_Prompt_Writer.md` for prompt writing guidance.
+Read `agent/Prompts/03_Prompt_Writer.md` for prompt writing guidance.
 
-For complex or domain-specific prompts, invoke the **Senior Prompt Engineer** agent (`.claude/agents/senior-prompt-engineer.md`) for deeper craft guidance.
+For complex or domain-specific prompts, read the **Senior Prompt Engineer** prompt at `agent/Prompts/01_Senior_Prompt_Engineer.md` for deeper craft guidance.
 
 Execute **Step 4: Generate Specialized Agents** for workflow "$ARGUMENTS".
 

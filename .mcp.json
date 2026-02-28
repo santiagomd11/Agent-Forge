@@ -2,11 +2,11 @@
   "mcpServers": {
     "computer_use": {
       "type": "stdio",
-      "command": "<Absolute path to test forge>/Agent-Forge/computer_use/.venv/bin/python",
+      "command": "/home/santiago/MakeHistory/Agent-Forge/computer_use/.venv/bin/python",
       "args": ["-m", "computer_use.mcp_server"],
-      "cwd": "/path/to/Agent-Forge",
+      "cwd": "/home/santiago/MakeHistory/Agent-Forge",
       "env": {
-        "PYTHONPATH": "/path/to/Agent-Forge"
+        "PYTHONPATH": "/home/santiago/MakeHistory/Agent-Forge"
       }
     }
   }

@@ -6,7 +6,8 @@
       "args": ["-m", "computer_use.mcp_server"],
       "cwd": "/home/santiago/MakeHistory/Agent-Forge",
       "env": {
-        "PYTHONPATH": "/home/santiago/MakeHistory/Agent-Forge"
+        "PYTHONPATH": "/home/santiago/MakeHistory/Agent-Forge",
+        "AGENT_FORGE_DEBUG": "1"
       }
     }
   }

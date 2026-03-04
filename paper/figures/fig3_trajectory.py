@@ -89,10 +89,11 @@ DEFAULT_GRAVITY = 9.0
 DEFAULT_WIND = 3.0
 DEFAULT_MAX_VEL = 20.0
 
-# Adapted parameters (practiced, n=30)
-ADAPTED_GRAVITY = 18.5
-ADAPTED_WIND = 1.1
-ADAPTED_MAX_VEL = 32.5
+# Adapted parameters (practiced, n=30), computed from formulas in spatial_cache.py
+# factor = min(1.0, log2(30) / 6.0) = 0.8178
+ADAPTED_GRAVITY = 9.0 + 0.8178 * 11.0   # 18.0
+ADAPTED_WIND = 3.0 * (1.0 - 0.8178 * 0.7)  # 1.28
+ADAPTED_MAX_VEL = 20.0 + 0.8178 * 15.0  # 32.27
 
 # Generate trajectories
 random.seed(42)

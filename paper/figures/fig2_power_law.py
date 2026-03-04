@@ -45,16 +45,18 @@ ax.plot(n, ratio, color="black", linewidth=1.2, label=r"$T(n)/T(1) = n^{-0.4}$")
 ax.axhline(y=FLOOR, color="black", linestyle="--", linewidth=0.7, label=f"Floor ({int(FLOOR * 100)}%)")
 
 # Key points
+# n where floor is reached: n^(-0.4) = 0.3 -> n ≈ 20
+n_floor = FLOOR ** (-1.0 / ALPHA)  # 20.29
+
 key_points = [
     (1, 1.0, "n=1\n100%"),
     (10, 10 ** (-ALPHA), f"n=10\n{10 ** (-ALPHA):.0%}"),
-    (64, FLOOR, f"n=64\n{FLOOR:.0%} (floor)"),
+    (round(n_floor), FLOOR, f"n={round(n_floor)}\n{FLOOR:.0%} (floor)"),
 ]
 
 for n_val, t_val, label in key_points:
     actual_val = max(n_val ** (-ALPHA), FLOOR)
     ax.plot(n_val, actual_val, "o", color="black", markersize=4, zorder=5)
-    # Position annotations to avoid overlap
     if n_val == 1:
         ax.annotate(label, xy=(n_val, actual_val), xytext=(2.5, 0.88),
                      fontsize=7, ha="left", va="top",
@@ -63,8 +65,8 @@ for n_val, t_val, label in key_points:
         ax.annotate(label, xy=(n_val, actual_val), xytext=(18, 0.52),
                      fontsize=7, ha="left", va="top",
                      arrowprops=dict(arrowstyle="-", linewidth=0.5, color="gray"))
-    elif n_val == 64:
-        ax.annotate(label, xy=(n_val, actual_val), xytext=(30, 0.18),
+    else:
+        ax.annotate(label, xy=(n_val, actual_val), xytext=(35, 0.18),
                      fontsize=7, ha="left", va="top",
                      arrowprops=dict(arrowstyle="-", linewidth=0.5, color="gray"))
 

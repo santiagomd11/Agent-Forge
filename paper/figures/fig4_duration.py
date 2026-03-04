@@ -53,7 +53,7 @@ duration_noisy = np.maximum(duration_clean + np.random.normal(0, NOISE_SIGMA, le
 
 # Scatter: individual interactions
 ax.scatter(n, duration_noisy, s=12, color="gray", edgecolors="none", alpha=0.7,
-           zorder=2, label="Observed")
+           zorder=2, label="Simulated")
 
 # Trend line: clean power law
 n_smooth = np.linspace(1, N_INTERACTIONS, 300)

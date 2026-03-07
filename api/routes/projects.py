@@ -59,6 +59,15 @@ async def delete_project(project_id: str, request: Request):
         return _not_found(project_id)
 
 
+@router.get("/{project_id}/nodes")
+async def list_nodes(project_id: str, request: Request):
+    repo = request.app.state.project_repo
+    project = await repo.get(project_id)
+    if not project:
+        return _not_found(project_id)
+    return await repo.get_nodes(project_id)
+
+
 @router.post("/{project_id}/nodes", status_code=201)
 async def add_node(project_id: str, body: NodeCreate, request: Request):
     repo = request.app.state.project_repo
@@ -90,6 +99,15 @@ async def delete_node(project_id: str, node_id: str, request: Request):
     deleted = await repo.delete_node(node_id)
     if not deleted:
         return JSONResponse(status_code=404, content={"error": {"code": "NODE_NOT_FOUND", "message": f"Node '{node_id}' not found", "details": {}}})
+
+
+@router.get("/{project_id}/edges")
+async def list_edges(project_id: str, request: Request):
+    repo = request.app.state.project_repo
+    project = await repo.get(project_id)
+    if not project:
+        return _not_found(project_id)
+    return await repo.get_edges(project_id)
 
 
 @router.post("/{project_id}/edges", status_code=201)

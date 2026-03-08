@@ -18,6 +18,9 @@ export function AgentDetail() {
   if (isLoading) return <div className="text-sm text-text-muted">Loading...</div>;
   if (!agent) return <div className="text-sm text-text-muted">Agent not found.</div>;
 
+  const isReady = agent.status === 'ready';
+  const isBusy = agent.status === 'creating' || agent.status === 'updating';
+
   const handleRun = async () => {
     const result = await runAgent.mutateAsync({ id: agent.id, inputs });
     navigate(`/runs/${result.run_id}`);
@@ -40,15 +43,39 @@ export function AgentDetail() {
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => navigate(`/agents/${agent.id}/edit`)}>Edit</Button>
           <Button variant="danger" onClick={handleDelete}>Delete</Button>
-          <Button onClick={() => setShowRunForm(!showRunForm)}>Run</Button>
+          <Button onClick={() => setShowRunForm(!showRunForm)} disabled={!isReady}>
+            {isBusy ? 'Generating...' : 'Run'}
+          </Button>
         </div>
       </div>
+
+      {isBusy && (
+        <Card className="p-4 border-info/30 bg-info/5">
+          <p className="text-sm text-info">
+            Agent is {agent.status}. Forge is generating the agent files. This may take a few minutes.
+          </p>
+        </Card>
+      )}
 
       <Card className="p-5 space-y-4">
         <div>
           <label className="text-xs text-text-muted uppercase tracking-wider">Description</label>
           <p className="text-sm text-text-secondary mt-1">{agent.description || 'No description'}</p>
         </div>
+
+        {agent.steps.length > 0 && (
+          <div>
+            <label className="text-xs text-text-muted uppercase tracking-wider">Steps</label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {agent.steps.map((step, i) => (
+                <span key={i} className="px-3 py-1 rounded-full bg-accent/10 text-accent text-sm">
+                  {step}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-text-muted uppercase tracking-wider">Provider</label>
@@ -63,6 +90,7 @@ export function AgentDetail() {
             <p className="text-sm text-text-primary mt-1">{agent.computer_use ? 'Enabled' : 'Disabled'}</p>
           </div>
         </div>
+
         {agent.input_schema.length > 0 && (
           <SchemaDisplay label="Input Schema" fields={agent.input_schema} />
         )}
@@ -71,7 +99,7 @@ export function AgentDetail() {
         )}
       </Card>
 
-      {showRunForm && (
+      {showRunForm && isReady && (
         <Card className="p-5 space-y-4">
           <h2 className="text-sm font-medium text-text-primary">Run Agent</h2>
           {agent.input_schema.length > 0 ? (

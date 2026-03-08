@@ -7,7 +7,15 @@ export function useAgents() {
 }
 
 export function useAgent(id: string) {
-  return useQuery({ queryKey: ['agents', id], queryFn: () => agentsApi.get(id), enabled: !!id });
+  return useQuery({
+    queryKey: ['agents', id],
+    queryFn: () => agentsApi.get(id),
+    enabled: !!id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'creating' || status === 'updating' ? 3000 : false;
+    },
+  });
 }
 
 export function useCreateAgent() {

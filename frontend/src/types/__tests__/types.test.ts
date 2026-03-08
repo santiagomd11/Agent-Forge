@@ -10,6 +10,7 @@ describe('Type definitions', () => {
       type: 'agent',
       status: 'creating',
       forge_path: '',
+      steps: [],
       samples: [],
       input_schema: [],
       output_schema: [],

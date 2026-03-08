@@ -26,6 +26,7 @@ export function Badge({ variant = 'default', children, className = '' }: BadgePr
 
 const statusVariant: Record<string, BadgeVariant> = {
   creating: 'info',
+  updating: 'info',
   ready: 'success',
   error: 'danger',
   queued: 'default',

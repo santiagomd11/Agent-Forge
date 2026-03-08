@@ -1,4 +1,4 @@
-"""ComputerUseEngine wrapper for desktop automation tasks."""
+"""ComputerUseEngine wrapper for desktop automation agents."""
 
 from typing import Any, Callable, Coroutine
 
@@ -7,24 +7,24 @@ EventCallback = Callable[[str, dict], Coroutine[Any, Any, None]]
 
 
 class ComputerUseService:
-    """Wraps the computer_use/ engine for task execution."""
+    """Wraps the computer_use/ engine for agent execution."""
 
     def __init__(self):
         self._engine = None
         try:
             from computer_use.core.engine import ComputerUseEngine
             self._engine = ComputerUseEngine()
-        except ImportError:
+        except (ImportError, Exception):
             pass
 
-    async def run_task(
-        self, task: dict, inputs: dict, callback: EventCallback,
+    async def run_agent(
+        self, agent: dict, inputs: dict, callback: EventCallback,
     ) -> dict:
-        """Run a computer use task. Returns outputs dict."""
+        """Run a computer use agent. Returns outputs dict."""
         if self._engine is None:
             return {"success": False, "error": "Computer use engine not available"}
 
-        description = task.get("description", "")
+        description = agent.get("description", "")
         if inputs:
             description += "\n\nInputs:\n"
             for k, v in inputs.items():

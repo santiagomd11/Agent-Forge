@@ -16,7 +16,7 @@ export function Select({ label, options, className = '', id, ...props }: SelectP
       )}
       <select
         id={inputId}
-        className={`w-full px-3 py-2 bg-bg-primary border border-border rounded-lg text-sm text-text-primary transition-colors ${className}`}
+        className={`w-full px-3 py-2 bg-bg-input border border-border rounded-lg text-sm text-text-primary transition-colors ${className}`}
         {...props}
       >
         {options.map((o) => (

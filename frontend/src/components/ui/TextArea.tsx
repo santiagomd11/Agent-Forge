@@ -15,7 +15,7 @@ export function TextArea({ label, className = '', id, ...props }: TextAreaProps)
       )}
       <textarea
         id={inputId}
-        className={`w-full px-3 py-2 bg-bg-primary border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted transition-colors resize-y min-h-[80px] ${className}`}
+        className={`w-full px-3 py-2 bg-bg-input border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted transition-colors resize-y min-h-[80px] ${className}`}
         {...props}
       />
     </div>

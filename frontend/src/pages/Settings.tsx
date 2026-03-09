@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
-import { Select } from '../components/ui/Select';
-import { Toggle } from '../components/ui/Toggle';
 import { Button } from '../components/ui/Button';
+import { useTheme } from '../hooks/useTheme';
+import { PixelMoon, PixelSun, PixelGear, PixelClock } from '../components/ui/PixelIcon';
 
 const STORAGE_KEY = 'agent-forge-settings';
 
@@ -10,7 +10,6 @@ interface AppSettings {
   defaultProvider: string;
   defaultModel: string;
   computerUse: boolean;
-  theme: 'dark' | 'light';
   autoRefreshInterval: string;
   maxConcurrentRuns: number;
 }
@@ -19,7 +18,6 @@ const defaults: AppSettings = {
   defaultProvider: 'claude_code',
   defaultModel: 'claude-sonnet-4-6',
   computerUse: false,
-  theme: 'dark',
   autoRefreshInterval: '5',
   maxConcurrentRuns: 3,
 };
@@ -32,29 +30,13 @@ function loadSettings(): AppSettings {
   return defaults;
 }
 
-const providerOptions = [
-  { value: 'claude_code', label: 'Claude Code' },
-  { value: 'anthropic', label: 'Anthropic' },
-];
-
-const modelOptions: Record<string, { value: string; label: string }[]> = {
-  claude_code: [{ value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' }],
-  anthropic: [
-    { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
-    { value: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
-  ],
-};
-
-const refreshOptions = [
-  { value: '5', label: '5 seconds' },
-  { value: '10', label: '10 seconds' },
-  { value: '30', label: '30 seconds' },
-  { value: '60', label: '60 seconds' },
-];
+const providerOptions = ['claude_code', 'codex', 'aider'];
 
 export function Settings() {
+  const { theme, toggle } = useTheme();
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [saved, setSaved] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
     if (saved) {
@@ -75,7 +57,6 @@ export function Settings() {
 
   const handleResetAgents = () => {
     if (confirm('This will delete ALL agents. Are you sure?')) {
-      // TODO: call DELETE on all agents when endpoint supports bulk delete
       alert('Not implemented yet -- delete agents individually from the Agents page.');
     }
   };
@@ -88,95 +69,102 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-xl font-semibold text-text-primary">Settings</h1>
+    <div>
+      <div className="mb-7">
+        <h1 className="font-heading text-[28px] font-semibold text-text-primary tracking-tight mb-1">Settings</h1>
+        <p className="font-body text-[13px] text-text-muted font-light">Configure your Agent Forge workspace</p>
+      </div>
 
-      {/* Default Provider Configuration */}
-      <Card className="p-5 space-y-5">
-        <h2 className="text-sm font-medium text-text-primary">Default Provider Configuration</h2>
-        <Select
-          label="Default Provider"
-          value={settings.defaultProvider}
-          onChange={(e) => {
-            update('defaultProvider', e.target.value);
-            const models = modelOptions[e.target.value];
-            if (models?.length) update('defaultModel', models[0].value);
-          }}
-          options={providerOptions}
-        />
-        <Select
-          label="Default Model"
-          value={settings.defaultModel}
-          onChange={(e) => update('defaultModel', e.target.value)}
-          options={modelOptions[settings.defaultProvider] ?? []}
-        />
-        <Toggle
-          label="Computer Use"
-          checked={settings.computerUse}
-          onChange={(v) => update('computerUse', v)}
-        />
-        <p className="text-xs text-text-muted">Enable desktop automation for agents by default.</p>
-      </Card>
+      <div className="flex flex-col gap-5 max-w-[600px]">
+        {/* Appearance */}
+        <Card className="px-7 py-6">
+          <div className="flex items-center gap-2.5 mb-4">
+            {theme === 'dark' ? <PixelMoon size={16} color="var(--color-info)" /> : <PixelSun size={16} color="var(--color-warning)" />}
+            <h2 className="font-heading text-lg font-semibold text-text-primary">Appearance</h2>
+          </div>
+          <div className="flex gap-2.5">
+            {(['light', 'dark'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => { if (m !== theme) toggle(); }}
+                className={`flex-1 py-3.5 px-5 rounded-xl border-2 transition-all cursor-pointer font-body text-[13px] font-medium flex items-center justify-center gap-2 capitalize ${
+                  theme === m
+                    ? 'border-accent bg-accent/[0.14] text-accent'
+                    : 'border-border text-text-muted hover:border-border-hover'
+                }`}
+              >
+                {m === 'dark' ? <PixelMoon size={14} color={theme === m ? 'var(--color-accent)' : 'var(--color-text-muted)'} /> : <PixelSun size={14} color={theme === m ? 'var(--color-accent)' : 'var(--color-text-muted)'} />}
+                {m} Mode
+              </button>
+            ))}
+          </div>
+        </Card>
 
-      {/* Application */}
-      <Card className="p-5 space-y-5">
-        <h2 className="text-sm font-medium text-text-primary">Application</h2>
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">Theme</label>
-          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+        {/* Default Provider */}
+        <Card className="px-7 py-6">
+          <div className="flex items-center gap-2.5 mb-4">
+            <PixelGear size={16} color="var(--color-text-muted)" hole="var(--color-bg-secondary)" />
+            <h2 className="font-heading text-lg font-semibold text-text-primary">Default Provider</h2>
+          </div>
+          <div className="flex gap-2">
+            {providerOptions.map((p) => (
+              <button
+                key={p}
+                onClick={() => update('defaultProvider', p)}
+                className={`flex-1 py-3 px-4 rounded-[10px] border-2 transition-all cursor-pointer font-mono text-xs ${
+                  settings.defaultProvider === p
+                    ? 'border-accent bg-accent/[0.14] text-accent'
+                    : 'border-border text-text-muted hover:border-border-hover'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Auto-Refresh */}
+        <Card className="px-7 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2.5 mb-1">
+                <PixelClock size={16} color="var(--color-text-muted)" />
+                <h2 className="font-heading text-lg font-semibold text-text-primary">Auto-Refresh</h2>
+              </div>
+              <p className="font-body text-xs text-text-muted font-light ml-[26px]">Automatically refresh dashboard data every 30 seconds</p>
+            </div>
             <button
-              type="button"
-              className={`px-4 py-2 text-sm ${settings.theme === 'dark' ? 'bg-accent text-white' : 'bg-bg-primary text-text-secondary'}`}
-              onClick={() => update('theme', 'dark')}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className="w-12 h-[26px] rounded-full border-none cursor-pointer relative transition-colors shrink-0 ml-4"
+              style={{ background: autoRefresh ? 'var(--color-success)' : 'var(--color-border)' }}
             >
-              Dark
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm ${settings.theme === 'light' ? 'bg-accent text-white' : 'bg-bg-primary text-text-secondary'}`}
-              onClick={() => update('theme', 'light')}
-            >
-              Light
+              <span
+                className="absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.2)] transition-all"
+                style={{ left: autoRefresh ? 25 : 3 }}
+              />
             </button>
           </div>
-        </div>
-        <Select
-          label="Auto-refresh interval"
-          value={settings.autoRefreshInterval}
-          onChange={(e) => update('autoRefreshInterval', e.target.value)}
-          options={refreshOptions}
-        />
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">Max concurrent runs</label>
-          <input
-            type="number"
-            min={1}
-            max={10}
-            value={settings.maxConcurrentRuns}
-            onChange={(e) => update('maxConcurrentRuns', parseInt(e.target.value) || 1)}
-            className="w-24 px-3 py-2 bg-bg-primary border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent"
-          />
-        </div>
-      </Card>
+        </Card>
 
-      {/* Danger Zone */}
-      <Card className="p-5 space-y-4 border-danger/30">
-        <h2 className="text-sm font-medium text-danger">Danger Zone</h2>
-        <div className="flex items-center justify-between py-2 border-b border-border/50">
-          <span className="text-sm text-text-secondary">Reset all agents</span>
-          <Button variant="danger" size="sm" onClick={handleResetAgents}>Reset</Button>
-        </div>
-        <div className="flex items-center justify-between py-2">
-          <span className="text-sm text-text-secondary">Clear run history</span>
-          <Button variant="danger" size="sm" onClick={handleClearHistory}>Clear</Button>
-        </div>
-      </Card>
+        {/* Danger Zone */}
+        <Card className="px-7 py-6 border-danger/30">
+          <h2 className="font-heading text-lg font-semibold text-danger mb-4">Danger Zone</h2>
+          <div className="flex items-center justify-between py-2 border-b border-border/50">
+            <span className="text-sm text-text-secondary font-body">Reset all agents</span>
+            <Button variant="danger" size="sm" onClick={handleResetAgents}>Reset</Button>
+          </div>
+          <div className="flex items-center justify-between py-2 mt-2">
+            <span className="text-sm text-text-secondary font-body">Clear run history</span>
+            <Button variant="danger" size="sm" onClick={handleClearHistory}>Clear</Button>
+          </div>
+        </Card>
 
-      {/* Save */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave}>
-          {saved ? 'Saved' : 'Save Settings'}
-        </Button>
+        {/* Save */}
+        <div className="flex justify-end">
+          <Button onClick={handleSave}>
+            {saved ? 'Saved' : 'Save Settings'}
+          </Button>
+        </div>
       </div>
     </div>
   );

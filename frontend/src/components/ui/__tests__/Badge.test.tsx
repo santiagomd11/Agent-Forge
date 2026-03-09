@@ -10,19 +10,19 @@ describe('Badge', () => {
 
   it('applies variant class', () => {
     const { container } = render(<Badge variant="success">ok</Badge>);
-    expect(container.firstChild).toHaveClass('text-accent');
+    expect(container.firstChild).toHaveClass('text-success');
   });
 });
 
 describe('StatusBadge', () => {
   it('renders status text', () => {
     render(<StatusBadge status="completed" />);
-    expect(screen.getByText('completed')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  it('maps creating to info variant', () => {
+  it('maps creating to warning variant', () => {
     const { container } = render(<StatusBadge status="creating" />);
-    expect(container.firstChild).toHaveClass('text-info');
+    expect(container.firstChild).toHaveClass('text-warning');
   });
 
   it('maps failed to danger variant', () => {

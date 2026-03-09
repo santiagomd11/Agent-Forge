@@ -23,3 +23,7 @@ __pycache__/
 *.log
 *.out
 texput.log
+
+# Session artifacts
+.specstory/
+.claude-handoff.md

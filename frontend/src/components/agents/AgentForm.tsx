@@ -135,7 +135,7 @@ export function AgentForm({ agent }: AgentFormProps) {
             onChange={(e) => setStepInput(e.target.value)}
             onKeyDown={handleStepKeyDown}
             placeholder="Add a step and press Enter"
-            className="flex-1 px-3 py-2 bg-bg-primary border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+            className="flex-1 px-3 py-2 bg-bg-input border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
             disabled={isBusy}
           />
           <Button type="button" variant="secondary" size="sm" onClick={addStep} disabled={!stepInput.trim() || isBusy}>

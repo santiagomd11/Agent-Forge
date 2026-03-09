@@ -3,6 +3,9 @@
 .env
 __pycache__/
 *.pyc
+*.db
+*.db-wal
+*.db-shm
 **/.venv/
 .mcp.json
 .debug/
@@ -20,3 +23,7 @@ __pycache__/
 *.log
 *.out
 texput.log
+
+# Session artifacts
+.specstory/
+.claude-handoff.md

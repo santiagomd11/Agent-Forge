@@ -79,11 +79,18 @@ class AgentService:
             # Parse the JSON output from forge
             forge_result = self._parse_forge_output(raw_output)
 
+            # Ensure forge_path is set -- fall back to known output pattern
+            forge_path = forge_result.get("forge_path", "")
+            if not forge_path:
+                expected = Path(f"output/{agent_id}")
+                if (PROJECT_ROOT / expected).exists():
+                    forge_path = str(expected)
+
             # Update the agent with forge results
             await self.agent_repo.update(
                 agent_id,
                 status="ready",
-                forge_path=forge_result.get("forge_path", ""),
+                forge_path=forge_path,
                 forge_config=forge_result.get("forge_config", {}),
                 input_schema=forge_result.get("input_schema", []),
                 output_schema=forge_result.get("output_schema", []),

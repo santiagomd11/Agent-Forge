@@ -1,3 +1,6 @@
+<!-- Copyright 2026 Victor Santiago Montaño Diaz
+     Licensed under the Apache License, Version 2.0 -->
+
 ---
 name: quality-reviewer
 description: |

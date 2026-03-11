@@ -279,9 +279,16 @@ class CLIAgentProvider:
                 yield event
 
         except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
             yield ExecutionEvent(type="error", data=f"Timed out after {effective_timeout}s")
+        finally:
+            # Always ensure the subprocess is killed and reaped, even if the
+            # caller stops iterating, an exception is raised, or the run fails.
+            if proc.returncode is None:
+                try:
+                    proc.kill()
+                except ProcessLookupError:
+                    pass
+                await proc.wait()
 
 
 def build_agent_prompt(agent: dict, inputs: dict) -> str:

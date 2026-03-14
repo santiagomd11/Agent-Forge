@@ -27,6 +27,10 @@
 
 ## Step {{STEP_NUMBER}}: {{STEP_NAME}}
 <!-- One step per phase of work. Each step should produce a clear output.
+     Step names must be human-readable and describe WHAT the step does, not HOW.
+     Good: "Generate PDF Report", "Research Topic", "Build Dashboard"
+     Bad: "Generate PDF report using gen_document.py", "Run fetch_data.py"
+     Script names belong in the workflow details below, not in the step title.
      If a step uses an agent, add a "Read:" directive pointing to its prompt file.
      If the step has an approval gate, add ⏸ to the heading. -->
 
@@ -66,6 +70,35 @@
 
 ---
 
+## Scripts
+
+Scripts in `agent/scripts/src/` support this workflow. A Python venv is pre-configured
+at `agent/scripts/.venv/` with all dependencies installed.
+
+{{SCRIPTS_LIST}}
+<!-- List each script with a one-line description. Example:
+     - `gen_html.py` -- Generates HTML reports from analysis data.
+     - `fetch_data.py` -- Fetches records from the project API.
+     If no workflow-specific scripts, write: "Built-in export scripts only (gen_document.py, gen_xlsx.py)." -->
+
+To run a script:
+```bash
+source agent/scripts/.venv/bin/activate
+python agent/scripts/src/{script_name}.py
+```
+
+To run tests:
+```bash
+source agent/scripts/.venv/bin/activate
+python -m pytest agent/scripts/tests/
+```
+
+To add a new script after initial generation, use `add_script()` from
+`forge/scripts/src/scaffold.py`, then call `install_dependencies()` to
+install any new pip packages into the venv.
+
+---
+
 ## Output Structure
 
 ```
@@ -76,9 +109,7 @@
      Include every file and directory the user should expect.
      Standard project directories live inside agent/:
      agent/Prompts/ (NN_Agent_Name.md), agent/scripts/ (src/, tests/, requirements.txt, README.md),
-     agent/utils/ (code/, docs/).
-     If scripts/ exist, remind that they require a venv:
-     python3 -m venv agent/scripts/.venv && source agent/scripts/.venv/bin/activate -->
+     agent/utils/ (code/, docs/). -->
 
 ---
 

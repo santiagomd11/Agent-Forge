@@ -86,6 +86,12 @@ Using the gathered requirements, design the workflow architecture:
 4. Determine how many specialized agents are needed and their roles
 5. Design the output folder structure
 6. Decide which patterns from `forge/patterns/` apply
+7. Identify scripts the workflow needs. For each script, specify:
+   - Name (e.g., `fetch_data.py`, `gen_html.py`)
+   - Type: **format** (document/file generation) or **general** (API client, validator, scraper, etc.)
+   - Purpose (1-2 sentences)
+   - Dependencies (pip packages)
+   If the workflow does not need scripts, state "Scripts: none".
 
 **Read relevant patterns from `forge/patterns/` based on the requirements.** For example:
 - If the workflow needs human review: read `forge/patterns/03-approval-gates.md`
@@ -108,6 +114,10 @@ Steps: {N}
 Agents Needed:
 - {Agent 1 Name}: {role description}
 - {Agent 2 Name}: {role description}
+
+Scripts Needed:
+- {script_name.py} (format|general): {purpose} [deps: {packages}]
+- (or "none")
 
 Output Structure:
 {folder tree}
@@ -198,25 +208,60 @@ For each step in the designed workflow:
 
 ## Step 6: Generate Project Scaffold ⏸
 
-**Read:** `forge/utils/scaffold/README.md.template`
-**Read:** `forge/utils/scaffold/CLAUDE.md.template`
+### 6a. Generate project skeleton
 
-Generate the remaining project files. Every generated workflow MUST include the standard project structure:
+Call `generate_scaffold()` from `forge/scripts/src/scaffold.py` to create the project deterministically:
 
-1. **README.md.** Entry point with "Read `agentic.md` and start" pattern, workflow description, command listing.
-2. **CLAUDE.md.** Project rules, structure listing, how-to-use, key rules, naming conventions.
-3. **agent/.** Directory containing all agent-related files:
-   - **agent/Prompts/.** Already created in Step 4.
-   - **agent/scripts/.** Directory with `src/`, `tests/`, `requirements.txt` (Python dependencies, empty if none), and `README.md` with venv setup instructions.
-   - **agent/utils/.** Directory with `code/` (reference code from user) and `docs/` (reference documentation from user). Add `.gitkeep` files in empty directories.
-4. **Output directories.** Create any directories referenced in the output structure with `.gitkeep` files.
-5. **Templates** (if the workflow uses the template-scaffold pattern). Create the template directory with starter files.
-6. **Computer use config** (if the workflow uses computer use). Include a `computer_use/config.yaml` with platform and provider settings for the generated workflow.
+```python
+from forge.scripts.src.scaffold import generate_scaffold, ScaffoldConfig
+
+config = ScaffoldConfig(
+    workflow_name="{workflow-name}",
+    workflow_description="{description from Step 1}",
+    folder_name="{workflow-name}",
+    steps=[{"number": N, "name": "Step Name", "command": "step-name"}, ...],
+    agents=[{"number": N, "name": "Agent_Name"}, ...],
+    computer_use=True|False,
+)
+root = generate_scaffold(config, base_dir="output")
+```
+
+This creates the full project structure: README.md, CLAUDE.md, agent/Prompts/, agent/scripts/, agent/utils/, .claude/commands/, output/, and a Python venv at `agent/scripts/.venv/` with export scripts (gen_document.py, gen_xlsx.py) pre-installed.
+
+### 6b. Generate workflow-specific scripts
+
+If scripts were identified in Step 2, generate each one now.
+
+For each **format script** (document/file generation):
+1. **Read:** `forge/Prompts/06_Format_Script_Generator.md`
+2. Follow the prompt to generate the script code and test code.
+3. Place via `add_script()`:
+
+```python
+from forge.scripts.src.scaffold import add_script, install_dependencies
+
+add_script(
+    agent_root=root,
+    script_name="gen_html.py",
+    script_content=script_code,
+    test_content=test_code,
+    dependencies=["jinja2"],
+)
+install_dependencies(root)
+```
+
+For each **general script** (API client, validator, scraper, etc.):
+1. **Read:** `forge/Prompts/07_Script_Generator.md`
+2. Follow the prompt to generate the script code and test code.
+3. Place via `add_script()` and `install_dependencies()` as above.
+
+### 6c. Present and approve
 
 **Present the complete file listing to the user.**
 **Wait for approval.**
 
-**Save:** All remaining files into `output/{workflow-name}/`
+**Save:** All files are already written by `generate_scaffold()` and `add_script()`.
+Confirm the output location: `output/{workflow-name}/`
 
 ---
 
@@ -240,8 +285,12 @@ Run the quality reviewer's checklist against the generated workflow:
 - [ ] The workflow is self-contained (no references to files outside its own directory)
 - [ ] agent/ directory exists with Prompts/, scripts/, utils/
 - [ ] agent/scripts/ contains src/, tests/, requirements.txt, README.md
+- [ ] agent/scripts/.venv/ exists and has working pip
 - [ ] agent/utils/ contains code/ and docs/
 - [ ] agent/scripts/README.md includes venv setup instructions
+- [ ] If scripts identified in Step 2: each script exists in agent/scripts/src/
+- [ ] If scripts identified in Step 2: each script has tests in agent/scripts/tests/
+- [ ] If scripts identified in Step 2: dependencies are in agent/scripts/requirements.txt and installed in .venv
 - [ ] .claude/commands/fix.md exists (standard in all workflows)
 - [ ] agent/Prompts/00_Workflow_Fixer.md exists (standard in all workflows)
 - [ ] agent/Prompts/01_Senior_Prompt_Engineer.md exists (standard in all workflows)
@@ -348,13 +397,14 @@ The `agentic.md` file is the **single source of truth** for any workflow. Slash 
 ### Naming Generated Workflows
 - Workflow folder: `kebab-case` (e.g., `content-pipeline`)
 - Slash commands: `kebab-case` matching step names (e.g., `generate-content.md`)
+- Step names: Title Case, human-readable. Describe WHAT the step does ("Generate PDF Report"), never HOW ("Generate PDF report using gen_document.py"). Script filenames belong in the step's workflow details, not in the step title or description.
 - Agent prompts: zero-padded with underscores (e.g., `01_Content_Strategist.md`)
 - Master command: always named `start-{workflow-name}.md` or `create-{workflow-name}.md`
 
 ### What Agent Forge Does NOT Do
-- It does **not** generate application code (apps, APIs, scripts). It generates **workflow definitions** (orchestrators, prompts, commands).
+- It does **not** generate application code (apps, APIs). It generates **workflow definitions** (orchestrators, prompts, commands) and **utility scripts** that support those workflows (format generators, data processors, API clients, etc.).
 - It does **not** execute the workflows it generates. It only creates the files.
-- It does **not** install dependencies or set up environments. Generated workflows handle that themselves.
+- Dependencies and venvs are set up automatically by `generate_scaffold()`. No manual environment setup is needed.
 
 ---
 
@@ -363,10 +413,10 @@ The `agentic.md` file is the **single source of truth** for any workflow. Slash 
 | Step | Check |
 |------|-------|
 | 01 | Description provided? Steps inferred or clarified? Requirements summary confirmed? |
-| 02 | Architecture reviewed? Patterns identified? Agents listed? |
+| 02 | Architecture reviewed? Patterns identified? Agents listed? Scripts identified (or "none")? |
 | 03 | Orchestrator follows template? All steps present? Gates correct? |
 | 04 | All agents generated? Each has all required sections? |
 | 05 | One command per step? Master command exists? Fix command exists? Senior prompt engineer copied? Frontmatter complete? |
-| 06 | README, CLAUDE.md, agent/ (Prompts/, scripts/, utils/) created? Templates if needed? |
+| 06 | generate_scaffold() called? Scripts from Step 2 placed via add_script()? Venv created? README, CLAUDE.md, agent/ complete? |
 | 07 | Self-review passes all checks? Workflow is self-contained? |
 | 08 | If computer use: agent prompt, execution commands, and config present? |

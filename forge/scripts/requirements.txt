@@ -1,0 +1,5 @@
+pytest
+pyyaml
+reportlab
+python-docx
+openpyxl

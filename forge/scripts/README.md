@@ -21,16 +21,23 @@ Run this from the project root (`Agent-Forge/`). The venv lives inside `forge/sc
 
 ## Usage
 
-All scripts in `src/` should be run with the venv active:
+All scripts in `src/` should be run from the project root with `PYTHONPATH=.`:
 
 ```bash
-source forge/scripts/.venv/bin/activate
-python forge/scripts/src/your_script.py
+PYTHONPATH=. forge/scripts/.venv/bin/python forge/scripts/src/scaffold.py
 ```
 
-## Tests
+## Testing
+
+Create the venv and install test dependencies:
 
 ```bash
-source forge/scripts/.venv/bin/activate
-python -m pytest forge/scripts/tests/
+python3 -m venv forge/scripts/.venv
+forge/scripts/.venv/bin/pip install pytest pyyaml
+```
+
+Run tests from the project root:
+
+```bash
+PYTHONPATH=. forge/scripts/.venv/bin/python -m pytest forge/scripts/tests/ -v
 ```

@@ -1,0 +1,6 @@
+pytest
+pytest-cov
+pyyaml
+reportlab
+python-docx
+openpyxl

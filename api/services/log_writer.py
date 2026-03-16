@@ -17,45 +17,50 @@ class LogWriter:
     def __init__(self, base_dir: Path | str):
         self.base_dir = Path(base_dir)
 
-    def _agent_logs_dir(self, run_id: str) -> Path:
+    def _agent_logs_dir(self, run_id: str, forge_path: str = "") -> Path:
+        if forge_path:
+            return self.base_dir / forge_path / "output" / run_id / "agent_logs"
         return self.base_dir / "output" / run_id / "agent_logs"
 
     @staticmethod
     def _sanitize_step_name(name: str) -> str:
         return name.lower().replace(" ", "-")
 
-    def append_run_event(self, run_id: str, event: dict[str, Any]) -> str:
+    def append_run_event(self, run_id: str, event: dict[str, Any], forge_path: str = "") -> str:
         """Append an event to execution.jsonl. Returns the relative log_path."""
-        path = self._agent_logs_dir(run_id) / "execution.jsonl"
+        path = self._agent_logs_dir(run_id, forge_path) / "execution.jsonl"
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "a") as f:
             f.write(json.dumps(event, default=str) + "\n")
+        if forge_path:
+            return f"{forge_path}/output/{run_id}/agent_logs"
         return f"output/{run_id}/agent_logs"
 
     def append_step_event(
-        self, run_id: str, step_num: int, step_name: str, event: dict[str, Any]
+        self, run_id: str, step_num: int, step_name: str, event: dict[str, Any],
+        forge_path: str = "",
     ) -> None:
         """Append an event to the step's JSONL file."""
         safe_name = self._sanitize_step_name(step_name)
         filename = f"step_{step_num:02d}_{safe_name}.jsonl"
-        path = self._agent_logs_dir(run_id) / filename
+        path = self._agent_logs_dir(run_id, forge_path) / filename
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "a") as f:
             f.write(json.dumps(event, default=str) + "\n")
 
-    def read_run_log(self, run_id: str) -> list[dict]:
+    def read_run_log(self, run_id: str, forge_path: str = "") -> list[dict]:
         """Read all events from execution.jsonl. Returns [] if missing."""
-        path = self._agent_logs_dir(run_id) / "execution.jsonl"
+        path = self._agent_logs_dir(run_id, forge_path) / "execution.jsonl"
         return self._read_jsonl(path)
 
-    def read_step_log(self, run_id: str, filename: str) -> list[dict]:
+    def read_step_log(self, run_id: str, filename: str, forge_path: str = "") -> list[dict]:
         """Read all events from a step JSONL file. Returns [] if missing."""
-        path = self._agent_logs_dir(run_id) / filename
+        path = self._agent_logs_dir(run_id, forge_path) / filename
         return self._read_jsonl(path)
 
-    def list_step_logs(self, run_id: str) -> list[str]:
+    def list_step_logs(self, run_id: str, forge_path: str = "") -> list[str]:
         """List step log filenames (excludes execution.jsonl)."""
-        logs_dir = self._agent_logs_dir(run_id)
+        logs_dir = self._agent_logs_dir(run_id, forge_path)
         if not logs_dir.exists():
             return []
         return sorted(

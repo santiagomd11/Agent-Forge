@@ -48,6 +48,7 @@ def create_app(db: Optional[Database] = None) -> FastAPI:
 
         log_writer = LogWriter(Path(__file__).resolve().parent.parent)
         _log_path_set: set[str] = set()
+        _run_forge_paths: dict[str, str] = {}
 
         # Run-level event types go to execution.jsonl; step-level go to step files
         _run_level_events = {"run_started", "run_completed", "run_failed", "approval_required"}
@@ -55,21 +56,31 @@ def create_app(db: Optional[Database] = None) -> FastAPI:
         async def emit(run_id, event_type, data):
             event = make_event(event_type, data)
 
+            # Cache forge_path from run_started event
+            if event_type == "run_started" and data and data.get("forge_path"):
+                _run_forge_paths[run_id] = data["forge_path"]
+
+            forge_path = _run_forge_paths.get(run_id, "")
+
             # Persist to JSONL
             if event_type in _run_level_events:
-                rel_path = log_writer.append_run_event(run_id, event)
+                log_writer.append_run_event(run_id, event, forge_path=forge_path)
             elif data and data.get("step_num"):
                 log_writer.append_step_event(
-                    run_id, data["step_num"], data["step_name"], event
+                    run_id, data["step_num"], data["step_name"], event,
+                    forge_path=forge_path,
                 )
-                rel_path = f"output/{run_id}/agent_logs"
             else:
                 # Single-step agent events go to execution.jsonl as well
-                rel_path = log_writer.append_run_event(run_id, event)
+                log_writer.append_run_event(run_id, event, forge_path=forge_path)
 
             # Set log_path on first event per run
             if run_id not in _log_path_set:
-                await app.state.run_repo.set_log_path(run_id, f"output/{run_id}/agent_logs")
+                if forge_path:
+                    log_path = f"{forge_path}/output/{run_id}/agent_logs"
+                else:
+                    log_path = f"output/{run_id}/agent_logs"
+                await app.state.run_repo.set_log_path(run_id, log_path)
                 _log_path_set.add(run_id)
 
             # Broadcast via WebSocket

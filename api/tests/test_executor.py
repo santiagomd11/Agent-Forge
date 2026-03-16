@@ -393,3 +393,95 @@ class TestBuildStepPrompt:
             prompt = build_step_prompt(agent, {}, step_number=2, step=agent["steps"][1])
 
         assert "step_02_analyze-results.md" in prompt
+
+
+class TestCollectOutputPaths:
+    """Tests for _collect_output_paths — scan user_outputs/ and map to schema fields."""
+
+    def _make_executor(self):
+        return AgentExecutor(provider=None, computer_use_service=None)
+
+    def test_maps_files_to_schema(self, tmp_path):
+        """Files in user_outputs/step_XX/ map to output schema fields by kebab->snake."""
+        executor = self._make_executor()
+
+        step_dir = tmp_path / "my-agent" / "output" / "run-123" / "user_outputs" / "step_01"
+        step_dir.mkdir(parents=True)
+        (step_dir / "competitor-profiles.md").write_text("# Profiles")
+
+        schema = [{"name": "competitor_profiles"}, {"name": "swot_analysis"}]
+        result = executor._collect_output_paths(
+            forge_path="my-agent",
+            run_id="run-123",
+            output_schema=schema,
+            project_root=tmp_path,
+        )
+
+        assert "competitor_profiles" in result
+        assert result["competitor_profiles"].endswith("competitor-profiles.md")
+        assert "swot_analysis" not in result
+
+    def test_empty_when_no_files(self, tmp_path):
+        """Returns empty dict when user_outputs/ doesn't exist."""
+        executor = self._make_executor()
+
+        result = executor._collect_output_paths(
+            forge_path="my-agent",
+            run_id="run-123",
+            output_schema=[{"name": "report"}],
+            project_root=tmp_path,
+        )
+        assert result == {}
+
+    def test_multiple_steps(self, tmp_path):
+        """Files across multiple step dirs all get mapped."""
+        executor = self._make_executor()
+
+        base = tmp_path / "agent" / "output" / "run-1" / "user_outputs"
+        for i, name in enumerate(["competitor-profiles", "swot-analysis", "strategic-recommendations"], 1):
+            d = base / f"step_{i:02d}"
+            d.mkdir(parents=True)
+            (d / f"{name}.md").write_text(f"# {name}")
+
+        schema = [
+            {"name": "competitor_profiles"},
+            {"name": "swot_analysis"},
+            {"name": "strategic_recommendations"},
+        ]
+        result = executor._collect_output_paths(
+            forge_path="agent",
+            run_id="run-1",
+            output_schema=schema,
+            project_root=tmp_path,
+        )
+
+        assert len(result) == 3
+        assert all(k in result for k in ["competitor_profiles", "swot_analysis", "strategic_recommendations"])
+
+    def test_returns_empty_when_no_forge_path(self, tmp_path):
+        """Without forge_path, returns empty dict."""
+        executor = self._make_executor()
+
+        result = executor._collect_output_paths(
+            forge_path="",
+            run_id="run-123",
+            output_schema=[{"name": "result"}],
+            project_root=tmp_path,
+        )
+        assert result == {}
+
+    def test_returns_empty_when_no_schema(self, tmp_path):
+        """Without output_schema, returns empty dict."""
+        executor = self._make_executor()
+
+        step_dir = tmp_path / "agent" / "output" / "run-1" / "user_outputs" / "step_01"
+        step_dir.mkdir(parents=True)
+        (step_dir / "report.md").write_text("# Report")
+
+        result = executor._collect_output_paths(
+            forge_path="agent",
+            run_id="run-1",
+            output_schema=[],
+            project_root=tmp_path,
+        )
+        assert result == {}

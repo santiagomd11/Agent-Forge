@@ -13,10 +13,9 @@ Works on **Windows**, **macOS**, and **Linux**.
 - Python >= 3.12
 - Node.js >= 22
 - At least one CLI agent tool installed and authenticated (see [providers.yaml](providers.yaml)):
-  - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) -- `npm install -g @anthropic-ai/claude-code && claude auth`
+  - [Claude Code](https://docs.anthropic-ai.com/en/docs/claude-code) -- `npm install -g @anthropic-ai/claude-code && claude auth`
   - [Codex](https://github.com/openai/codex) -- `npm install -g @openai/codex`
-  - [Aider](https://aider.chat) -- `pip install aider-chat`
-  - [Gemini CLI](https://github.com/google-gemini/gemini-cli) -- `npm install -g @anthropic-ai/gemini-cli`
+  - [Gemini CLI](https://github.com/google-gemini/gemini-cli) -- `npm install -g @google/gemini-cli`
   - Or any other CLI tool -- just add an entry to `providers.yaml`
 
 ### Run everything

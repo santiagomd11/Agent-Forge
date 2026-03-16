@@ -52,7 +52,7 @@ class ExecutionService:
 
         _ensure_run_output_dirs(agent.get("forge_path", ""), run_id)
         await self.run_repo.update_status(run_id, "running")
-        await self.emit(run_id, "run_started", {})
+        await self.emit(run_id, "run_started", {"forge_path": agent.get("forge_path", "")})
 
         try:
             async def callback(event_type, data):

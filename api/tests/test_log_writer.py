@@ -112,3 +112,46 @@ class TestListStepLogs:
 
     def test_list_returns_empty_for_missing_run(self, log_writer):
         assert log_writer.list_step_logs("nonexistent") == []
+
+
+class TestForgePathSupport:
+    """Tests for forge_path parameter — logs go to {forge_path}/output/{run_id}/agent_logs/."""
+
+    def test_append_run_event_with_forge_path(self, log_writer, tmp_path):
+        event = {"type": "run_started", "data": {}, "timestamp": "2026-03-15T18:00:00Z"}
+        rel_path = log_writer.append_run_event("run-1", event, forge_path="output/my-agent")
+
+        assert rel_path == "output/my-agent/output/run-1/agent_logs"
+        path = tmp_path / "output" / "my-agent" / "output" / "run-1" / "agent_logs" / "execution.jsonl"
+        assert path.exists()
+        assert json.loads(path.read_text().strip()) == event
+
+    def test_append_step_event_with_forge_path(self, log_writer, tmp_path):
+        event = {"type": "agent_log", "data": {"message": "hi"}, "timestamp": "2026-03-15T18:01:00Z"}
+        log_writer.append_step_event("run-1", 1, "Research", event, forge_path="output/my-agent")
+
+        path = tmp_path / "output" / "my-agent" / "output" / "run-1" / "agent_logs" / "step_01_research.jsonl"
+        assert path.exists()
+
+    def test_read_run_log_with_forge_path(self, log_writer):
+        event = {"type": "run_started", "data": {}, "timestamp": "2026-03-15T18:00:00Z"}
+        log_writer.append_run_event("run-1", event, forge_path="output/my-agent")
+
+        events = log_writer.read_run_log("run-1", forge_path="output/my-agent")
+        assert len(events) == 1
+        assert events[0]["type"] == "run_started"
+
+    def test_read_step_log_with_forge_path(self, log_writer):
+        event = {"type": "agent_log", "data": {"message": "working"}, "timestamp": "2026-03-15T18:01:00Z"}
+        log_writer.append_step_event("run-1", 1, "Analyze", event, forge_path="output/my-agent")
+
+        events = log_writer.read_step_log("run-1", "step_01_analyze.jsonl", forge_path="output/my-agent")
+        assert len(events) == 1
+
+    def test_list_step_logs_with_forge_path(self, log_writer):
+        event = {"type": "agent_log", "data": {}, "timestamp": "2026-03-15T18:01:00Z"}
+        log_writer.append_step_event("run-1", 1, "Research", event, forge_path="output/my-agent")
+        log_writer.append_step_event("run-1", 2, "Analyze", event, forge_path="output/my-agent")
+
+        files = log_writer.list_step_logs("run-1", forge_path="output/my-agent")
+        assert len(files) == 2

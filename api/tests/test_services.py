@@ -732,7 +732,7 @@ class TestExecutionService:
         updated_run = await run_repo.get(run["id"])
         assert updated_run["status"] == "completed"
         assert updated_run["outputs"] == {"findings": "AI research data"}
-        emit_mock.assert_any_call(run["id"], "run_started", {})
+        emit_mock.assert_any_call(run["id"], "run_started", {"forge_path": ""})
         emit_mock.assert_any_call(
             run["id"], "run_completed",
             {"outputs": {"findings": "AI research data"}},

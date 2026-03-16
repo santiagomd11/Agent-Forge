@@ -159,7 +159,53 @@ class AgentExecutor:
                 **step_ctx,
             })
 
+        # Prefer file paths from disk over parsed stdout JSON
+        file_outputs = self._collect_output_paths(
+            agent.get("forge_path", ""), run_id, agent.get("output_schema", [])
+        )
+        if file_outputs:
+            return file_outputs
         return self._parse_output(last_output, agent.get("output_schema", []))
+
+    def _collect_output_paths(
+        self,
+        forge_path: str,
+        run_id: str,
+        output_schema: list[dict],
+        project_root: Path | None = None,
+    ) -> dict:
+        """Scan user_outputs/ for files and map to output schema fields.
+
+        Returns a dict of {field_name: relative_path} for files that match
+        schema field names (kebab-case filenames → snake_case field names).
+        Returns empty dict if no forge_path, no schema, or no files found.
+        """
+        if not forge_path or not output_schema or not run_id:
+            return {}
+
+        root = project_root or Path(_PROJECT_ROOT)
+        user_outputs = root / forge_path / "output" / run_id / "user_outputs"
+        if not user_outputs.exists():
+            return {}
+
+        # Build lookup: kebab-stem -> schema field name
+        schema_lookup = {}
+        for field in output_schema:
+            kebab = field["name"].replace("_", "-")
+            schema_lookup[kebab] = field["name"]
+
+        outputs = {}
+        for step_dir in sorted(user_outputs.iterdir()):
+            if not step_dir.is_dir():
+                continue
+            for file in step_dir.iterdir():
+                if not file.is_file():
+                    continue
+                if file.stem in schema_lookup:
+                    rel_path = str(file.relative_to(root))
+                    outputs[schema_lookup[file.stem]] = rel_path
+
+        return outputs
 
     def _parse_output(self, raw_response: str, output_schema: list[dict]) -> dict:
         """Parse provider response into output dict.

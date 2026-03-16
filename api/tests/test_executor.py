@@ -178,6 +178,138 @@ class TestAgentExecutor:
         assert result == {"summary": "Just some plain text output"}
 
     @pytest.mark.asyncio
+    async def test_parse_output_multi_schema_fallback_sets_all_keys(self):
+        """When plain text is returned and multiple output schema fields exist,
+        the primary field gets the text and all other fields get empty string."""
+        provider = _make_streaming_provider("Just plain text")
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-multi",
+            "name": "Multi Output",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [
+                {"name": "report", "type": "markdown"},
+                {"name": "summary", "type": "text"},
+                {"name": "data", "type": "json"},
+            ],
+        }
+        result = await executor.execute(agent, {}, callback)
+        # First field gets the text
+        assert result["report"] == "Just plain text"
+        # Other fields default to empty string, not missing
+        assert "summary" in result
+        assert "data" in result
+        assert result["summary"] == ""
+        assert result["data"] == ""
+
+    @pytest.mark.asyncio
+    async def test_parse_output_no_schema_uses_result_key(self):
+        """When no output schema, plain text maps to 'result' key."""
+        provider = _make_streaming_provider("plain text")
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-noschema",
+            "name": "T",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [],
+        }
+        result = await executor.execute(agent, {}, callback)
+        assert result == {"result": "plain text"}
+
+    @pytest.mark.asyncio
+    async def test_parse_output_valid_json_returned_as_is(self):
+        """When provider returns valid JSON dict, it's used directly."""
+        provider = _make_streaming_provider('{"report": "findings", "summary": "brief"}')
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-json",
+            "name": "T",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [{"name": "report", "type": "markdown"}, {"name": "summary", "type": "text"}],
+        }
+        result = await executor.execute(agent, {}, callback)
+        assert result == {"report": "findings", "summary": "brief"}
+
+    @pytest.mark.asyncio
+    async def test_parse_output_json_with_trailing_text(self):
+        """When JSON is followed by extra text, the JSON object is still extracted."""
+        raw = '{"report": "findings", "summary": "brief"}\n\nSome trailing text the model added.'
+        provider = _make_streaming_provider(raw)
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-trailing",
+            "name": "T",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [{"name": "report", "type": "markdown"}, {"name": "summary", "type": "text"}],
+        }
+        result = await executor.execute(agent, {}, callback)
+        assert result == {"report": "findings", "summary": "brief"}
+
+    @pytest.mark.asyncio
+    async def test_parse_output_json_with_leading_text(self):
+        """When text precedes the JSON object, the JSON is still extracted."""
+        raw = 'Here is my analysis:\n\n{"report": "the report", "summary": "the summary"}'
+        provider = _make_streaming_provider(raw)
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-leading",
+            "name": "T",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [{"name": "report", "type": "markdown"}, {"name": "summary", "type": "text"}],
+        }
+        result = await executor.execute(agent, {}, callback)
+        assert result == {"report": "the report", "summary": "the summary"}
+
+    @pytest.mark.asyncio
+    async def test_parse_output_json_with_trailing_extra_brace(self):
+        """When JSON is followed by an extra closing brace, the JSON is still extracted.
+
+        Regression: the old scanner used `end -= 1` after rfind, which caused it to
+        skip the position of the valid JSON's last `}` and never try the correct slice.
+        """
+        raw = '{"report": "findings", "summary": "brief"}}'
+        provider = _make_streaming_provider(raw)
+        cu_service = AsyncMock()
+        callback = AsyncMock()
+
+        executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
+        agent = {
+            "id": "agent-extrabrace",
+            "name": "T",
+            "description": "",
+            "type": "agent",
+            "computer_use": False,
+            "output_schema": [{"name": "report", "type": "markdown"}, {"name": "summary", "type": "text"}],
+        }
+        result = await executor.execute(agent, {}, callback)
+        assert result == {"report": "findings", "summary": "brief"}
+
+    @pytest.mark.asyncio
     async def test_execute_with_forge_path(self):
         """When agent has forge_path, prompt references agentic.md."""
         provider = _make_streaming_provider('{"result": "done"}')
@@ -261,3 +393,95 @@ class TestBuildStepPrompt:
             prompt = build_step_prompt(agent, {}, step_number=2, step=agent["steps"][1])
 
         assert "step_02_analyze-results.md" in prompt
+
+
+class TestCollectOutputPaths:
+    """Tests for _collect_output_paths — scan user_outputs/ and map to schema fields."""
+
+    def _make_executor(self):
+        return AgentExecutor(provider=None, computer_use_service=None)
+
+    def test_maps_files_to_schema(self, tmp_path):
+        """Files in user_outputs/step_XX/ map to output schema fields by kebab->snake."""
+        executor = self._make_executor()
+
+        step_dir = tmp_path / "my-agent" / "output" / "run-123" / "user_outputs" / "step_01"
+        step_dir.mkdir(parents=True)
+        (step_dir / "competitor-profiles.md").write_text("# Profiles")
+
+        schema = [{"name": "competitor_profiles"}, {"name": "swot_analysis"}]
+        result = executor._collect_output_paths(
+            forge_path="my-agent",
+            run_id="run-123",
+            output_schema=schema,
+            project_root=tmp_path,
+        )
+
+        assert "competitor_profiles" in result
+        assert result["competitor_profiles"].endswith("competitor-profiles.md")
+        assert "swot_analysis" not in result
+
+    def test_empty_when_no_files(self, tmp_path):
+        """Returns empty dict when user_outputs/ doesn't exist."""
+        executor = self._make_executor()
+
+        result = executor._collect_output_paths(
+            forge_path="my-agent",
+            run_id="run-123",
+            output_schema=[{"name": "report"}],
+            project_root=tmp_path,
+        )
+        assert result == {}
+
+    def test_multiple_steps(self, tmp_path):
+        """Files across multiple step dirs all get mapped."""
+        executor = self._make_executor()
+
+        base = tmp_path / "agent" / "output" / "run-1" / "user_outputs"
+        for i, name in enumerate(["competitor-profiles", "swot-analysis", "strategic-recommendations"], 1):
+            d = base / f"step_{i:02d}"
+            d.mkdir(parents=True)
+            (d / f"{name}.md").write_text(f"# {name}")
+
+        schema = [
+            {"name": "competitor_profiles"},
+            {"name": "swot_analysis"},
+            {"name": "strategic_recommendations"},
+        ]
+        result = executor._collect_output_paths(
+            forge_path="agent",
+            run_id="run-1",
+            output_schema=schema,
+            project_root=tmp_path,
+        )
+
+        assert len(result) == 3
+        assert all(k in result for k in ["competitor_profiles", "swot_analysis", "strategic_recommendations"])
+
+    def test_returns_empty_when_no_forge_path(self, tmp_path):
+        """Without forge_path, returns empty dict."""
+        executor = self._make_executor()
+
+        result = executor._collect_output_paths(
+            forge_path="",
+            run_id="run-123",
+            output_schema=[{"name": "result"}],
+            project_root=tmp_path,
+        )
+        assert result == {}
+
+    def test_returns_empty_when_no_schema(self, tmp_path):
+        """Without output_schema, returns empty dict."""
+        executor = self._make_executor()
+
+        step_dir = tmp_path / "agent" / "output" / "run-1" / "user_outputs" / "step_01"
+        step_dir.mkdir(parents=True)
+        (step_dir / "report.md").write_text("# Report")
+
+        result = executor._collect_output_paths(
+            forge_path="agent",
+            run_id="run-1",
+            output_schema=[],
+            project_root=tmp_path,
+        )
+        assert result == {}

@@ -120,9 +120,13 @@ class AgentExecutor:
             can_stream = not uses_cu
             timeout = 1800 if uses_cu else 900
 
+            # Step context is included in event data for log routing
+            step_ctx = {"step_num": i, "step_name": step_name}
+
             await callback("agent_log", {
                 "agent_id": agent["id"],
                 "message": f"--- Step {i}: {step_name} {'[Desktop]' if uses_cu else '[CLI]'} ---",
+                **step_ctx,
             })
 
             prompt = build_step_prompt(agent, inputs, step_number=i, step=step, run_id=run_id)
@@ -139,6 +143,7 @@ class AgentExecutor:
                         await callback("agent_log", {
                             "agent_id": agent["id"],
                             "message": event.data,
+                            **step_ctx,
                         })
                 elif event.type == "done":
                     collected_output = event.data
@@ -151,12 +156,66 @@ class AgentExecutor:
             await callback("agent_log", {
                 "agent_id": agent["id"],
                 "message": f"--- Step {i} complete ---",
+                **step_ctx,
             })
 
+        # Prefer file paths from disk over parsed stdout JSON
+        file_outputs = self._collect_output_paths(
+            agent.get("forge_path", ""), run_id, agent.get("output_schema", [])
+        )
+        if file_outputs:
+            return file_outputs
         return self._parse_output(last_output, agent.get("output_schema", []))
 
+    def _collect_output_paths(
+        self,
+        forge_path: str,
+        run_id: str,
+        output_schema: list[dict],
+        project_root: Path | None = None,
+    ) -> dict:
+        """Scan user_outputs/ for files and map to output schema fields.
+
+        Returns a dict of {field_name: relative_path} for files that match
+        schema field names (kebab-case filenames → snake_case field names).
+        Returns empty dict if no forge_path, no schema, or no files found.
+        """
+        if not forge_path or not output_schema or not run_id:
+            return {}
+
+        root = project_root or Path(_PROJECT_ROOT)
+        user_outputs = root / forge_path / "output" / run_id / "user_outputs"
+        if not user_outputs.exists():
+            return {}
+
+        # Build lookup: kebab-stem -> schema field name
+        schema_lookup = {}
+        for field in output_schema:
+            kebab = field["name"].replace("_", "-")
+            schema_lookup[kebab] = field["name"]
+
+        outputs = {}
+        for step_dir in sorted(user_outputs.iterdir()):
+            if not step_dir.is_dir():
+                continue
+            for file in step_dir.iterdir():
+                if not file.is_file():
+                    continue
+                if file.stem in schema_lookup:
+                    rel_path = str(file.relative_to(root))
+                    outputs[schema_lookup[file.stem]] = rel_path
+
+        return outputs
+
     def _parse_output(self, raw_response: str, output_schema: list[dict]) -> dict:
-        """Parse provider response into output dict."""
+        """Parse provider response into output dict.
+
+        Handles three cases:
+        1. Clean JSON object → parse directly
+        2. JSON embedded in text (leading/trailing prose) → scan and extract
+        3. Plain text → map to schema fields
+        """
+        # Try direct parse first
         try:
             parsed = json.loads(raw_response)
             if isinstance(parsed, dict):
@@ -164,6 +223,30 @@ class AgentExecutor:
         except (json.JSONDecodeError, TypeError):
             pass
 
+        # Scan for an embedded JSON object (handles leading/trailing text)
+        text = raw_response.strip()
+        start = text.find("{")
+        if start != -1:
+            # Try progressively shorter substrings from the last `}` backwards.
+            # Use `end = pos` (not `pos - 1`) so the next rfind searches [start, pos)
+            # and naturally finds the next `}` to the left without skipping any.
+            end = len(text)
+            while end > start:
+                pos = text.rfind("}", start, end)
+                if pos == -1:
+                    break
+                try:
+                    parsed = json.loads(text[start:pos + 1])
+                    if isinstance(parsed, dict):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
+                end = pos
+
+        # Map raw text to schema fields
         if output_schema:
-            return {output_schema[0]["name"]: raw_response}
+            result = {output_schema[0]["name"]: raw_response}
+            for field in output_schema[1:]:
+                result.setdefault(field["name"], "")
+            return result
         return {"result": raw_response}

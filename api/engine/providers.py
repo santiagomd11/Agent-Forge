@@ -7,6 +7,7 @@ means editing that YAML file, zero code changes.
 import asyncio
 import json
 import os
+import re
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +43,16 @@ class ExecutionEvent:
 
 
 @dataclass
+class StreamingConfig:
+    """Provider-specific streaming configuration."""
+    mode: str = "none"
+    flag: str = ""
+    from_value: str = ""
+    to_value: str = ""
+    extra_args: list[str] = field(default_factory=list)
+
+
+@dataclass
 class ProviderConfig:
     """Configuration for a CLI-based agent provider."""
     name: str
@@ -49,6 +60,8 @@ class ProviderConfig:
     args: list[str] = field(default_factory=list)
     available_check: list[str] = field(default_factory=list)
     timeout: int = 300
+    streaming: StreamingConfig | None = None
+    stream_parser: str = "plain_text"
 
 
 def _load_providers_yaml() -> dict[str, dict]:
@@ -73,16 +86,173 @@ def load_provider_config(provider_key: str, overrides: dict | None = None) -> Pr
             f"Available: {', '.join(providers.keys())}"
         )
     config = {**providers[provider_key]}
+    model = None
     if overrides:
+        model = overrides.get("model")
         config.update(overrides)
+    if model:
+        config["args"] = [*config["args"], "--model", model]
+    if "streaming" in config and isinstance(config["streaming"], dict):
+        config["streaming"] = StreamingConfig(
+            mode=config["streaming"].get("mode", "none"),
+            flag=config["streaming"].get("flag", ""),
+            from_value=config["streaming"].get("from", ""),
+            to_value=config["streaming"].get("to", ""),
+            extra_args=config["streaming"].get("extra_args", []),
+        )
     # Filter to only fields ProviderConfig accepts (ignore metadata like models)
     valid_fields = {f.name for f in ProviderConfig.__dataclass_fields__.values()}
     config = {k: v for k, v in config.items() if k in valid_fields}
     return ProviderConfig(**config)
 
 
-def parse_stream_json_line(line: str) -> tuple[str | None, str | None]:
-    """Parse a stream-json line into (human_readable_message, final_result).
+async def create_provider(
+    provider_key: str,
+    model: str | None = None,
+    timeout: int | None = None,
+) -> "CLIAgentProvider":
+    """Create a provider instance for a specific provider/model selection."""
+    overrides = {}
+    if model:
+        overrides["model"] = model
+    if timeout is not None:
+        overrides["timeout"] = timeout
+    config = load_provider_config(provider_key, overrides or None)
+    return CLIAgentProvider(config)
+
+
+def _parse_claude_stream_json_line(data: dict) -> tuple[str | None, str | None]:
+    """Parse Claude stream-json events."""
+    event_type = data.get("type", "")
+
+    if event_type == "result":
+        result = data.get("result")
+        if result is None:
+            return (None, None)
+        if isinstance(result, dict):
+            return (None, json.dumps(result))
+        return (None, str(result))
+
+    if event_type != "assistant":
+        return (None, None)
+
+    message = data.get("message", {})
+    content_blocks = message.get("content", [])
+    for block in content_blocks:
+        block_type = block.get("type", "")
+        if block_type == "text":
+            text = block.get("text", "").strip()
+            if text:
+                return (text[:500], None)
+        if block_type == "tool_use":
+            tool_name = block.get("name", "unknown")
+            return (f"Using tool: {tool_name}", None)
+
+    return (None, None)
+
+
+def _parse_gemini_stream_json_line(data: dict) -> tuple[str | None, str | None]:
+    """Parse Gemini stream-json events."""
+    event_type = data.get("type", "")
+
+    if event_type == "message" and data.get("role") == "assistant":
+        content = data.get("content", "")
+        if isinstance(content, str):
+            text = content.strip()
+            if text:
+                return (text[:500], None)
+        return (None, None)
+
+    if event_type == "result":
+        result = data.get("result")
+        if result is None:
+            return (None, None)
+        if isinstance(result, dict):
+            return (None, json.dumps(result))
+        return (None, str(result))
+
+    return (None, None)
+
+
+def _parse_codex_jsonl_line(data: dict) -> tuple[str | None, str | None]:
+    """Parse Codex JSONL events."""
+    event_type = data.get("type", "")
+
+    if event_type == "agent_message_delta":
+        delta = data.get("delta", "")
+        if isinstance(delta, str):
+            text = delta.strip()
+            if text:
+                return (text[:500], None)
+        return (None, None)
+
+    item = data.get("item", {})
+    item_type = item.get("type", "")
+
+    if event_type == "item.started" and item_type == "command_execution":
+        command = item.get("command", "")
+        summary = _summarize_command(command)
+        if summary:
+            return (f"Running command: {summary}", None)
+        return ("Running command", None)
+
+    if event_type == "item.completed" and item_type == "reasoning":
+        text = _strip_markdown_emphasis(item.get("text", ""))
+        if text:
+            return (text[:500], None)
+        return (None, None)
+
+    if event_type == "item.completed" and item_type == "agent_message":
+        text = item.get("text", "")
+        if isinstance(text, str):
+            cleaned = text.strip()
+            if cleaned:
+                return (cleaned[:500], None)
+        return (None, None)
+
+    if event_type == "item.completed" and item_type == "command_execution":
+        return (None, None)
+
+    if event_type in {"response.completed", "result"}:
+        result = data.get("result") or data.get("output_text")
+        if result is None:
+            return (None, None)
+        if isinstance(result, dict):
+            return (None, json.dumps(result))
+        return (None, str(result))
+
+    return (None, None)
+
+
+def _strip_markdown_emphasis(text: str) -> str:
+    """Remove simple markdown emphasis markers from short status text."""
+    if not isinstance(text, str):
+        return ""
+    return re.sub(r"[*_`]+", "", text).strip()
+
+
+def _summarize_command(command: str) -> str:
+    """Extract a short human-readable command summary."""
+    if not isinstance(command, str) or not command.strip():
+        return ""
+
+    normalized = command.strip()
+    for separator in (" && ", "; "):
+        if separator in normalized:
+            normalized = normalized.split(separator)[-1].strip()
+    normalized = normalized.strip("'\"")
+
+    if normalized.startswith("cat <<"):
+        return "write file"
+
+    return normalized[:120]
+
+
+def parse_stream_json_line(
+    line: str,
+    parser_name: str = "claude_stream_json",
+) -> tuple[str | None, str | None]:
+    """Parse a streaming line into (human_readable_message, final_result).
 
     Returns:
         - (message, None) for intermediate events worth showing
@@ -95,28 +265,15 @@ def parse_stream_json_line(line: str) -> tuple[str | None, str | None]:
         # Non-JSON line: return as-is
         return (line if line.strip() else None, None)
 
-    event_type = data.get("type", "")
-
-    if event_type == "result":
-        result = data.get("result", "")
-        if isinstance(result, dict):
-            return (None, json.dumps(result))
-        return (None, str(result))
-
-    if event_type == "assistant":
-        message = data.get("message", {})
-        content_blocks = message.get("content", [])
-        for block in content_blocks:
-            block_type = block.get("type", "")
-            if block_type == "text":
-                text = block.get("text", "").strip()
-                if text:
-                    return (text[:500], None)
-            elif block_type == "tool_use":
-                tool_name = block.get("name", "unknown")
-                return (f"Using tool: {tool_name}", None)
-
-    return (None, None)
+    parsers = {
+        "claude_stream_json": _parse_claude_stream_json_line,
+        "gemini_stream_json": _parse_gemini_stream_json_line,
+        "codex_jsonl": _parse_codex_jsonl_line,
+    }
+    parser = parsers.get(parser_name)
+    if parser is None:
+        return (line if line.strip() else None, None)
+    return parser(data)
 
 
 class CLIAgentProvider:
@@ -160,19 +317,37 @@ class CLIAgentProvider:
         return result
 
     def _build_streaming_args(self, prompt: str, workspace: str | None = None) -> list[str]:
-        """Build args for streaming: swap --output-format json to stream-json."""
+        """Build provider-specific streaming args."""
         args = self._build_args(prompt, workspace)
-        # Swap json -> stream-json for Claude Code style providers
-        swapped = False
-        for i, arg in enumerate(args):
-            if arg == "json" and i > 0 and args[i - 1] == "--output-format":
-                args[i] = "stream-json"
-                swapped = True
+        streaming = self.config.streaming
+        if not streaming or streaming.mode != "output_format_swap":
+            return args
+
+        for i in range(1, len(args)):
+            if args[i - 1] == streaming.flag and args[i] == streaming.from_value:
+                args[i] = streaming.to_value
+                args.extend(streaming.extra_args)
                 break
-        # stream-json with --print (-p) requires --verbose
-        if swapped:
-            args.append("--verbose")
         return args
+
+    def _is_stream_json_args(self, args: list[str]) -> bool:
+        """Check whether the built args produce stream-json output."""
+        streaming = self.config.streaming
+        if not streaming or streaming.mode != "output_format_swap":
+            return False
+
+        for i in range(1, len(args)):
+            if args[i - 1] == streaming.flag and args[i] == streaming.to_value:
+                return True
+        return False
+
+    def _should_parse_stream_output(self, args: list[str]) -> bool:
+        """Check whether stdout should be interpreted by a structured parser."""
+        if self.config.stream_parser == "plain_text":
+            return False
+        if self.config.stream_parser == "codex_jsonl":
+            return "--json" in args
+        return self._is_stream_json_args(args)
 
     async def execute(
         self,
@@ -250,10 +425,7 @@ class CLIAgentProvider:
             args = self._build_streaming_args(prompt, workspace)
         else:
             args = self._build_args(prompt, workspace)
-        is_stream_json = any(
-            args[i] == "stream-json" and i > 0 and args[i - 1] == "--output-format"
-            for i in range(len(args))
-        )
+        should_parse_stream = self._should_parse_stream_output(args)
         effective_timeout = timeout or self.config.timeout
 
         # Use a 10 MB read buffer — the default 64 KB is too small for agents
@@ -284,8 +456,11 @@ class CLIAgentProvider:
                     if not text:
                         continue
 
-                    if is_stream_json:
-                        msg, result = parse_stream_json_line(text)
+                    if should_parse_stream:
+                        msg, result = parse_stream_json_line(
+                            text,
+                            parser_name=self.config.stream_parser,
+                        )
                         if result is not None:
                             final_result = result
                         elif msg is not None:

@@ -44,7 +44,11 @@ class ArtifactService:
 
         mime_type = (content_type or mimetypes.guess_type(safe_name)[0] or "").lower()
         allowed_mime_types = [item.lower() for item in (schema_field.get("mime_types") or [])]
-        if allowed_mime_types and mime_type not in allowed_mime_types:
+        if allowed_mime_types and not self._mime_type_allowed(
+            mime_type=mime_type,
+            allowed_mime_types=allowed_mime_types,
+            suffix=suffix,
+        ):
             allowed_text = ", ".join(allowed_mime_types)
             return f"Expected MIME type: {allowed_text}"
 
@@ -113,3 +117,17 @@ class ArtifactService:
             and value.get("kind") in {"file", "archive", "directory"}
             and isinstance(value.get("path"), str)
         )
+
+    @staticmethod
+    def _mime_type_allowed(mime_type: str, allowed_mime_types: list[str], suffix: str) -> bool:
+        if mime_type in allowed_mime_types:
+            return True
+
+        if not mime_type or mime_type == "application/octet-stream":
+            return True
+
+        markdown_family = {"text/markdown", "text/x-markdown", "text/plain"}
+        if suffix in {".md", ".markdown"} and mime_type in markdown_family:
+            return bool(markdown_family & set(allowed_mime_types))
+
+        return False

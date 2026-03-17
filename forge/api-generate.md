@@ -229,7 +229,7 @@ Generated agents must meet the same quality bar as agents created interactively 
 - agent/steps/ with one step file per workflow step.
 - agent/scripts/ with src/, tests/, requirements.txt, README.md.
 - agent/utils/ with code/ and docs/.
-- output/ directory exists (scaffold creates base; at runtime the API creates output/{run_id}/agent_outputs/ and output/{run_id}/user_outputs/ per run).
+- output/ directory exists (scaffold creates base; at runtime the API creates output/{run_id}/inputs/, output/{run_id}/agent_outputs/, output/{run_id}/user_outputs/, and output/{run_id}/agent_logs/ per run).
 
 ---
 
@@ -295,8 +295,10 @@ keep the skeleton.
 
 Step results (the files created when the agent runs) go in the agent's `output/` directory.
 The scaffold creates an empty `output/` directory. At runtime, the API creates per-run directories:
+- `output/{run_id}/inputs/` holds staged runtime input artifacts
 - `output/{run_id}/agent_outputs/` holds inter-step context files (e.g., `step_01_agent_output.md`)
 - `output/{run_id}/user_outputs/` holds user-facing deliverables organized by step (e.g., `step_01/report.pdf`)
+- `output/{run_id}/agent_logs/` holds run and step JSONL logs
 
 These directories are created automatically by the execution service before the agent runs, so agents don't need to create them.
 

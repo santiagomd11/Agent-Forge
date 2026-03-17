@@ -8,6 +8,7 @@ from pathlib import Path
 
 from api.engine.providers import CLIAgentProvider, ProviderError
 from api.persistence.repositories import AgentRepository
+from forge.scripts.src.scaffold import create_venv, install_dependencies
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,13 +30,36 @@ class AgentService:
         self.provider = provider
         self.provider_factory = provider_factory
 
+    def ensure_agent_runtime_scaffold(self, forge_path: str) -> None:
+        agent_root = PROJECT_ROOT / forge_path
+        if not agent_root.exists():
+            return
+        output_dir = agent_root / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / ".gitkeep").write_text("")
+
+    def ensure_agent_script_environment(self, forge_path: str) -> None:
+        agent_root = PROJECT_ROOT / forge_path
+        scripts_dir = agent_root / "agent" / "scripts"
+        requirements_path = scripts_dir / "requirements.txt"
+        if not scripts_dir.exists() or not requirements_path.exists():
+            return
+
+        venv_dir = scripts_dir / ".venv"
+        if venv_dir.exists():
+            install_dependencies(str(agent_root))
+            return
+        create_venv(str(agent_root))
+
     def ensure_agent_repo_tracking(self, forge_path: str, message: str = "Initial agent scaffold") -> None:
         agent_root = PROJECT_ROOT / forge_path
         if not agent_root.exists():
             return
+        self.ensure_agent_runtime_scaffold(forge_path)
         gitignore = agent_root / ".gitignore"
         gitignore.write_text(
-            "output/\n"
+            "output/*\n"
+            "!output/.gitkeep\n"
             "agent/scripts/.venv/\n"
             "__pycache__/\n"
             ".pytest_cache/\n"
@@ -178,6 +202,7 @@ class AgentService:
 
             await self.agent_repo.update(agent_id, **update_fields)
             if forge_path:
+                self.ensure_agent_script_environment(forge_path)
                 self.ensure_agent_repo_tracking(forge_path, "Initial agent scaffold")
             logger.info("Forge completed for agent %s -- status: ready", agent_id)
 
@@ -263,6 +288,7 @@ class AgentService:
             await self.agent_repo.update(agent_id, **update_fields)
             forge_path = update_fields.get("forge_path", "") or old_agent.get("forge_path", "")
             if forge_path:
+                self.ensure_agent_script_environment(forge_path)
                 self.ensure_agent_repo_tracking(forge_path, "Update agent workflow")
             logger.info("Forge update completed for agent %s -- status: ready", agent_id)
 

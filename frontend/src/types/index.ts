@@ -24,7 +24,7 @@ export interface StepDefinition {
   computer_use: boolean;
 }
 
-export type AgentStatus = 'creating' | 'updating' | 'ready' | 'error';
+export type AgentStatus = 'creating' | 'updating' | 'importing' | 'ready' | 'error';
 
 export interface Agent {
   id: string;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAgent, useDeleteAgent, useRunAgent, useUploadAgentArtifact } from '../hooks/useAgents';
+import { useAgent, useDeleteAgent, useExportAgentPackage, useRunAgent, useUploadAgentArtifact } from '../hooks/useAgents';
 import { useProviders } from '../hooks/useProviders';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -96,6 +96,7 @@ export function AgentDetail() {
   const { data: agent, isLoading } = useAgent(id ?? '');
   const { data: providers } = useProviders();
   const deleteAgent = useDeleteAgent();
+  const exportAgentPackage = useExportAgentPackage();
   const runAgent = useRunAgent();
   const uploadArtifact = useUploadAgentArtifact();
   const [inputs, setInputs] = useState<Record<string, string | ArtifactDescriptor>>({});
@@ -146,7 +147,7 @@ export function AgentDetail() {
   if (!agent) return <div className="text-sm text-text-muted p-10">Agent not found.</div>;
 
   const isReady = agent.status === 'ready';
-  const isBusy = agent.status === 'creating' || agent.status === 'updating';
+  const isBusy = agent.status === 'creating' || agent.status === 'updating' || agent.status === 'importing';
   const providerOptions = providers ?? [];
   const modelOptions = providerOptions.find((provider) => provider.id === runProvider)?.models ?? [];
 
@@ -182,6 +183,19 @@ export function AgentDetail() {
     }
   };
 
+  const handleExport = async () => {
+    const blob = await exportAgentPackage.mutateAsync(agent.id);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeName = (agent.name || agent.id).trim().replace(/\s+/g, '-').toLowerCase();
+    link.href = url;
+    link.download = `${safeName || agent.id}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div
@@ -197,10 +211,13 @@ export function AgentDetail() {
           <p className="font-body text-[13px] text-text-muted font-light max-w-[600px] leading-relaxed">{agent.description || 'No description'}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => navigate(`/agents/${agent.id}/edit`)}>Edit</Button>
+          <Button variant="secondary" size="sm" onClick={handleExport} disabled={exportAgentPackage.isPending}>
+            Export
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => navigate(`/agents/${agent.id}/edit`)} disabled={isBusy}>Edit</Button>
           <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
-          <Button size="sm" onClick={handleRun} disabled={runAgent.isPending || !isReady}>
-            <PixelPlay size={12} color="var(--color-bg-primary)" /> {isBusy ? 'Generating...' : 'Start Run'}
+          <Button size="sm" onClick={handleRun} disabled={runAgent.isPending || uploadArtifact.isPending || !isReady}>
+            <PixelPlay size={12} color="var(--color-bg-primary)" /> {isBusy ? 'Generating...' : uploadArtifact.isPending ? 'Uploading...' : 'Start Run'}
           </Button>
         </div>
       </div>
@@ -208,7 +225,7 @@ export function AgentDetail() {
       {isBusy && (
         <Card className="p-4 border-info/30 bg-info/5 mb-6">
           <p className="text-sm text-info font-body">
-            Agent is {agent.status}. Forge is generating the agent files. This may take a few minutes.
+            Agent is {agent.status}. The agent files are being prepared. This may take a few minutes.
           </p>
         </Card>
       )}
@@ -324,21 +341,29 @@ export function AgentDetail() {
                       type="file"
                       aria-label={field.label || field.name}
                       accept={field.accept?.join(',')}
+                      disabled={uploadArtifact.isPending}
                       onChange={async (e) => {
                         const selected = e.target.files?.[0];
                         if (!selected || !id) return;
-                        const descriptor = await uploadArtifact.mutateAsync({
-                          id,
-                          fieldName: field.name,
-                          file: selected,
-                        });
-                        setInputs((prev) => ({ ...prev, [field.name]: descriptor }));
-                        if (validationErrors[field.name]) {
-                          setValidationErrors((prev) => {
-                            const next = { ...prev };
-                            delete next[field.name];
-                            return next;
+                        try {
+                          const descriptor = await uploadArtifact.mutateAsync({
+                            id,
+                            fieldName: field.name,
+                            file: selected,
                           });
+                          setInputs((prev) => ({ ...prev, [field.name]: descriptor }));
+                          if (validationErrors[field.name]) {
+                            setValidationErrors((prev) => {
+                              const next = { ...prev };
+                              delete next[field.name];
+                              return next;
+                            });
+                          }
+                        } catch (error) {
+                          setValidationErrors((prev) => ({
+                            ...prev,
+                            [field.name]: error instanceof Error ? error.message : 'Upload failed',
+                          }));
                         }
                       }}
                       className={`w-full px-3.5 py-2.5 bg-bg-input border rounded-[10px] text-sm text-text-primary ${hasError ? 'border-danger' : 'border-border'}`}

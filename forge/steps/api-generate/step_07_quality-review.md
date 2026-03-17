@@ -43,7 +43,7 @@
    - [ ] .claude/commands/fix.md exists
    - [ ] agent/Prompts/00_Workflow_Fixer.md exists
    - [ ] agent/Prompts/01_Senior_Prompt_Engineer.md exists
-   - [ ] output/ directory exists (scaffold creates base; at runtime the API creates output/{run_id}/agent_outputs/ and output/{run_id}/user_outputs/ per run)
+   - [ ] output/ directory exists (scaffold creates base; at runtime the API creates output/{run_id}/inputs/, output/{run_id}/agent_outputs/, output/{run_id}/user_outputs/, and output/{run_id}/agent_logs/ per run)
    - [ ] If computer use: Computer Use Agent prompt exists?
    - [ ] If computer use: Execution commands generated?
 
@@ -112,7 +112,7 @@
    │   └── utils/
    │       ├── code/
    │       └── docs/
-   ├── output/  (at runtime: output/{run_id}/agent_outputs/ and output/{run_id}/user_outputs/)
+   ├── output/  (at runtime: output/{run_id}/inputs/, output/{run_id}/agent_outputs/, output/{run_id}/user_outputs/, and output/{run_id}/agent_logs/)
    └── {output-dirs}/
 
    To use this workflow:

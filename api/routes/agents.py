@@ -4,6 +4,7 @@ import io
 import json
 import subprocess
 import shutil
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -27,7 +28,7 @@ def _not_found(agent_id: str):
 
 def _build_export_manifest(agent: dict) -> dict:
     return {
-        "export_version": 1,
+        "export_version": 2,
         "name": agent["name"],
         "description": agent.get("description", ""),
         "steps": agent.get("steps", []),
@@ -48,6 +49,19 @@ def _safe_extract_zip(archive: zipfile.ZipFile, target_dir: Path) -> None:
         if target_root not in resolved.parents and resolved != target_root:
             raise ValueError(f"Unsafe archive entry: {member.filename}")
         archive.extract(member, target_dir)
+
+
+def _set_repo_identity(agent_root: Path) -> None:
+    subprocess.run(
+        ["git", "-C", str(agent_root), "config", "user.name", "Agent Forge"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(agent_root), "config", "user.email", "agent-forge@local"],
+        check=True,
+        capture_output=True,
+    )
 
 
 @router.post("", status_code=201)
@@ -113,7 +127,7 @@ async def update_agent(
         current = await repo.get(agent_id)
         if not current:
             return _not_found(agent_id)
-        if current["status"] in ("creating", "updating"):
+        if current["status"] in ("creating", "updating", "importing"):
             return JSONResponse(
                 status_code=409,
                 content={"error": {"code": "AGENT_BUSY", "message": f"Agent is '{current['status']}', cannot update substantive fields now", "details": {}}},
@@ -279,14 +293,17 @@ async def export_agent(agent_id: str, request: Request):
             content={"error": {"code": "AGENT_NOT_EXPORTED", "message": "Agent folder does not exist on disk", "details": {}}},
         )
 
-    proc = subprocess.run(
-        ["git", "-C", str(agent_root), "archive", "--format=zip", "HEAD"],
-        check=True,
-        capture_output=True,
-    )
-    payload = io.BytesIO(proc.stdout)
-    with zipfile.ZipFile(payload, mode="a", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("agent-forge.json", json.dumps(_build_export_manifest(agent), indent=2))
+    with tempfile.TemporaryDirectory() as temp_dir:
+        bundle_path = Path(temp_dir) / "agent.bundle"
+        subprocess.run(
+            ["git", "-C", str(agent_root), "bundle", "create", str(bundle_path), "--all"],
+            check=True,
+            capture_output=True,
+        )
+        payload = io.BytesIO()
+        with zipfile.ZipFile(payload, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("agent-forge.json", json.dumps(_build_export_manifest(agent), indent=2))
+            archive.write(bundle_path, arcname="agent.bundle")
     payload.seek(0)
     filename = f"{agent['name'].replace(' ', '-').lower() or agent_id}.zip"
     return StreamingResponse(
@@ -299,7 +316,6 @@ async def export_agent(agent_id: str, request: Request):
 @router.post("/import", status_code=201)
 async def import_agent(request: Request, file: UploadFile = File(...)):
     repo = request.app.state.agent_repo
-    agent_service = request.app.state.agent_service
 
     archive_bytes = await file.read()
     try:
@@ -318,11 +334,18 @@ async def import_agent(request: Request, file: UploadFile = File(...)):
                 status_code=400,
                 content={"error": {"code": "INVALID_AGENT_ARCHIVE", "message": "Archive is missing agent-forge.json", "details": {}}},
             )
+        try:
+            archive.getinfo("agent.bundle")
+        except KeyError:
+            return JSONResponse(
+                status_code=400,
+                content={"error": {"code": "INVALID_AGENT_ARCHIVE", "message": "Archive is missing agent.bundle", "details": {}}},
+            )
 
         agent = await repo.create(
             name=manifest.get("name") or "Imported Agent",
             description=manifest.get("description", ""),
-            status="ready",
+            status="importing",
             steps=manifest.get("steps", []),
             samples=manifest.get("samples", []),
             input_schema=manifest.get("input_schema", []),
@@ -333,8 +356,25 @@ async def import_agent(request: Request, file: UploadFile = File(...)):
         )
         forge_path = f"output/{agent['id']}"
         target_dir = PROJECT_ROOT / forge_path
-        target_dir.mkdir(parents=True, exist_ok=True)
-        _safe_extract_zip(archive, target_dir)
-        await repo.update(agent["id"], forge_path=forge_path)
-        agent_service.ensure_agent_repo_tracking(forge_path, "Import agent package")
-        return await repo.get(agent["id"])
+        try:
+            target_dir.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                _safe_extract_zip(archive, temp_path)
+                bundle_path = temp_path / "agent.bundle"
+                subprocess.run(
+                    ["git", "clone", str(bundle_path), str(target_dir)],
+                    check=True,
+                    capture_output=True,
+                )
+            _set_repo_identity(target_dir)
+            agent_service = request.app.state.agent_service
+            agent_service.ensure_agent_runtime_scaffold(forge_path)
+            agent_service.ensure_agent_script_environment(forge_path)
+            await repo.update(agent["id"], forge_path=forge_path, status="ready")
+            return await repo.get(agent["id"])
+        except Exception:
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            await repo.delete(agent["id"])
+            raise

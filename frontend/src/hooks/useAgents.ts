@@ -13,7 +13,7 @@ export function useAgent(id: string) {
     enabled: !!id,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === 'creating' || status === 'updating' ? 3000 : false;
+      return status === 'creating' || status === 'updating' || status === 'importing' ? 3000 : false;
     },
   });
 }
@@ -74,5 +74,19 @@ export function useUploadAgentArtifact() {
       fieldName: string;
       file: File;
     }) => agentsApi.uploadArtifact(id, fieldName, file),
+  });
+}
+
+export function useExportAgentPackage() {
+  return useMutation({
+    mutationFn: (id: string) => agentsApi.exportPackage(id),
+  });
+}
+
+export function useImportAgentPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => agentsApi.importPackage(file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agents'] }),
   });
 }

@@ -740,7 +740,17 @@ class TestAgentService:
             await service.run_forge(agent["id"])
 
             assert (forge_root / ".git").is_dir()
-            assert (forge_root / ".gitignore").read_text().splitlines()[0] == "output/"
+            gitignore_lines = (forge_root / ".gitignore").read_text().splitlines()
+            assert gitignore_lines[0] == "output/*"
+            assert "!output/.gitkeep" in gitignore_lines
+            assert (forge_root / "output" / ".gitkeep").exists()
+            tracked_files = subprocess.run(
+                ["git", "-C", str(forge_root), "ls-files"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()
+            assert "output/.gitkeep" in tracked_files
             head = subprocess.run(
                 ["git", "-C", str(forge_root), "rev-parse", "HEAD"],
                 check=True,
@@ -757,6 +767,53 @@ class TestAgentService:
             assert message.stdout.strip() == "Initial agent scaffold"
         finally:
             agent_service_mod.PROJECT_ROOT = original_root
+
+    @pytest.mark.asyncio
+    async def test_run_forge_ensures_script_environment(self, db, tmp_path):
+        from api.persistence.repositories import AgentRepository
+        from api.services.agent_service import AgentService
+        import api.services.agent_service as agent_service_mod
+
+        agent_repo = AgentRepository(db)
+        provider = AsyncMock(spec=CLIAgentProvider)
+        provider.execute = AsyncMock(
+            return_value='{"forge_path": "output/test-agent/", "forge_config": {}, "input_schema": [], "output_schema": []}'
+        )
+
+        forge_root = tmp_path / "output" / "test-agent" / "agent" / "scripts"
+        forge_root.mkdir(parents=True)
+        (forge_root.parent.parent / "agentic.md").write_text("# Agent")
+        (forge_root / "requirements.txt").write_text("reportlab\n")
+
+        original_root = agent_service_mod.PROJECT_ROOT
+        original_create_venv = agent_service_mod.create_venv
+        original_install_dependencies = agent_service_mod.install_dependencies
+        create_calls: list[str] = []
+        install_calls: list[str] = []
+
+        def fake_create_venv(agent_root: str) -> None:
+            create_calls.append(agent_root)
+            (Path(agent_root) / "agent" / "scripts" / ".venv").mkdir(parents=True, exist_ok=True)
+
+        def fake_install_dependencies(agent_root: str) -> None:
+            install_calls.append(agent_root)
+
+        agent_service_mod.PROJECT_ROOT = tmp_path
+        agent_service_mod.create_venv = fake_create_venv
+        agent_service_mod.install_dependencies = fake_install_dependencies
+        try:
+            service = AgentService(agent_repo=agent_repo, provider=provider)
+            agent = await service.create_agent(name="Test", description="A test agent")
+
+            await service.run_forge(agent["id"])
+
+            assert create_calls == [str(tmp_path / "output" / "test-agent")]
+            assert install_calls == []
+            assert (tmp_path / "output" / "test-agent" / "agent" / "scripts" / ".venv").is_dir()
+        finally:
+            agent_service_mod.PROJECT_ROOT = original_root
+            agent_service_mod.create_venv = original_create_venv
+            agent_service_mod.install_dependencies = original_install_dependencies
 
     @pytest.mark.asyncio
     async def test_run_forge_passes_agent_id_to_provider(self, db):
@@ -967,6 +1024,76 @@ class TestAgentService:
             agent_service_mod.PROJECT_ROOT = original_root
 
     @pytest.mark.asyncio
+    async def test_run_update_refreshes_existing_script_environment(self, db, tmp_path):
+        from api.persistence.repositories import AgentRepository
+        from api.services.agent_service import AgentService
+        import api.services.agent_service as agent_service_mod
+
+        agent_repo = AgentRepository(db)
+        provider = AsyncMock(spec=CLIAgentProvider)
+        provider.execute = AsyncMock(
+            return_value='{"forge_path": "output/test-agent/", "forge_config": {}, "input_schema": [], "output_schema": []}'
+        )
+
+        forge_root = tmp_path / "output" / "test-agent" / "agent" / "scripts"
+        forge_root.mkdir(parents=True)
+        (forge_root.parent.parent / "agentic.md").write_text("# v1")
+        (forge_root / "requirements.txt").write_text("reportlab\n")
+        (forge_root / ".venv").mkdir(parents=True)
+        subprocess.run(["git", "-C", str(forge_root.parent.parent.parent), "init"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(forge_root.parent.parent.parent), "config", "user.name", "Agent Forge"],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(forge_root.parent.parent.parent), "config", "user.email", "agent-forge@local"],
+            check=True,
+            capture_output=True,
+        )
+        (forge_root.parent.parent.parent / ".gitignore").write_text("output/*\n!output/.gitkeep\n")
+        subprocess.run(["git", "-C", str(forge_root.parent.parent.parent), "add", "."], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(forge_root.parent.parent.parent), "commit", "-m", "Initial agent scaffold"],
+            check=True,
+            capture_output=True,
+        )
+
+        original_root = agent_service_mod.PROJECT_ROOT
+        original_create_venv = agent_service_mod.create_venv
+        original_install_dependencies = agent_service_mod.install_dependencies
+        create_calls: list[str] = []
+        install_calls: list[str] = []
+
+        def fake_create_venv(agent_root: str) -> None:
+            create_calls.append(agent_root)
+
+        def fake_install_dependencies(agent_root: str) -> None:
+            install_calls.append(agent_root)
+
+        agent_service_mod.PROJECT_ROOT = tmp_path
+        agent_service_mod.create_venv = fake_create_venv
+        agent_service_mod.install_dependencies = fake_install_dependencies
+        try:
+            service = AgentService(agent_repo=agent_repo, provider=provider)
+            agent = await service.create_agent(name="Test", description="Original desc")
+            await agent_repo.update(agent["id"], status="ready", forge_path="output/test-agent/")
+
+            old_agent = await agent_repo.get(agent["id"])
+            await service.run_update(
+                agent["id"],
+                old_agent=old_agent,
+                new_fields={"description": "Updated desc"},
+            )
+
+            assert create_calls == []
+            assert install_calls == [str(tmp_path / "output" / "test-agent")]
+        finally:
+            agent_service_mod.PROJECT_ROOT = original_root
+            agent_service_mod.create_venv = original_create_venv
+            agent_service_mod.install_dependencies = original_install_dependencies
+
+    @pytest.mark.asyncio
     async def test_run_update_sets_error_on_failure(self, db):
         """When forge update fails, status goes to error."""
         from api.persistence.repositories import AgentRepository
@@ -1019,7 +1146,7 @@ class TestAgentService:
 
 class TestExecutionService:
 
-    def test_ensure_run_output_dirs_creates_inputs_agent_outputs_and_user_outputs(self, tmp_path):
+    def test_ensure_run_output_dirs_creates_all_runtime_run_directories(self, tmp_path):
         from api.services.execution_service import _ensure_run_output_dirs
         import api.services.execution_service as execution_service_mod
 
@@ -1031,6 +1158,7 @@ class TestExecutionService:
             assert (base / "inputs").is_dir()
             assert (base / "agent_outputs").is_dir()
             assert (base / "user_outputs").is_dir()
+            assert (base / "agent_logs").is_dir()
         finally:
             execution_service_mod._PROJECT_ROOT = original_root
 

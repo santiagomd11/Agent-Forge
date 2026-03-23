@@ -108,7 +108,7 @@ async def get_agent(agent_id: str, request: Request):
     return agent
 
 
-_SUBSTANTIVE_FIELDS = {"description", "steps", "samples", "computer_use"}
+_SUBSTANTIVE_FIELDS = {"description", "steps", "samples", "computer_use", "input_schema", "output_schema"}
 
 
 @router.put("/{agent_id}")
@@ -126,6 +126,10 @@ async def update_agent(
         fields["input_schema"] = [s.model_dump(exclude_none=False) for s in body.input_schema]
     if "output_schema" in fields:
         fields["output_schema"] = [s.model_dump(exclude_none=False) for s in body.output_schema]
+
+    # Extract provider/model -- used for forge calls but never saved to DB on update
+    edit_provider = fields.pop("provider", None)
+    edit_model = fields.pop("model", None)
 
     substantive_changes = _SUBSTANTIVE_FIELDS & fields.keys()
 
@@ -146,10 +150,11 @@ async def update_agent(
             return _not_found(agent_id)
         background_tasks.add_task(
             agent_service.run_update, agent_id, current, fields,
+            provider_override=edit_provider, model_override=edit_model,
         )
         return agent
 
-    # Cosmetic update only
+    # Cosmetic update only (name only at this point)
     agent = await repo.update(agent_id, **fields)
     if not agent:
         return _not_found(agent_id)
@@ -262,7 +267,9 @@ async def upload_agent_artifact(
             status_code=400,
             content={"error": {"code": "INVALID_INPUT_FIELD", "message": f"Unknown input field '{field_name}'", "details": {}}},
         )
-    if schema_field.get("type") not in {"file", "archive", "directory"}:
+    field_type = schema_field.get("type", "")
+    is_file_type = field_type in {"file", "archive", "directory"} or field_type.startswith(".")
+    if not is_file_type:
         return JSONResponse(
             status_code=400,
             content={"error": {"code": "INVALID_INPUT_FIELD", "message": f"Input field '{field_name}' does not accept uploaded artifacts", "details": {}}},
@@ -316,7 +323,7 @@ async def export_agent(agent_id: str, request: Request):
             archive.writestr("agent-forge.json", json.dumps(_build_export_manifest(agent), indent=2))
             archive.write(bundle_path, arcname="agent.bundle")
     payload.seek(0)
-    filename = f"{agent['name'].replace(' ', '-').lower() or agent_id}.zip"
+    filename = f"{agent['name'].replace(' ', '-').lower() or agent_id}.agnt"
     return StreamingResponse(
         payload,
         media_type="application/zip",

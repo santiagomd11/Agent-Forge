@@ -334,7 +334,7 @@ async def export_agent(agent_id: str, request: Request):
             archive.writestr("agent-forge.json", json.dumps(_build_export_manifest(agent), indent=2))
             archive.write(bundle_path, arcname="agent.bundle")
     payload.seek(0)
-    filename = f"{agent['name'].replace(' ', '-').lower() or agent_id}.zip"
+    filename = f"{agent['name'].replace(' ', '-').lower() or agent_id}.agnt"
     return StreamingResponse(
         payload,
         media_type="application/zip",

@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
+import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { TextArea } from '../ui/TextArea';
 import { Select } from '../ui/Select';
 import { SchemaEditor } from './SchemaEditor';
-import { useCreateAgent, useUpdateAgent } from '../../hooks/useAgents';
+import { useCreateAgent, useUpdateAgent, useImportAgentPackage } from '../../hooks/useAgents';
 import { useProviders } from '../../hooks/useProviders';
 import { BUSY_STATUSES } from '../../types';
 import type { Agent, SchemaField } from '../../types';
@@ -48,6 +49,20 @@ export function AgentForm({ agent }: AgentFormProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const dragNode = useRef<HTMLDivElement | null>(null);
+
+  // Import agent
+  const importAgent = useImportAgentPackage();
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = await importAgent.mutateAsync(file);
+      navigate(`/agents/${imported.id}`);
+    } finally {
+      event.target.value = '';
+    }
+  };
 
   const isEditing = !!agent;
   const isBusy = agent?.status !== undefined && BUSY_STATUSES.has(agent.status);
@@ -326,6 +341,34 @@ export function AgentForm({ agent }: AgentFormProps) {
           Cancel
         </Button>
       </div>
+
+      {!isEditing && (
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 border-t border-border" />
+          <span className="text-xs text-text-muted">or</span>
+          <div className="flex-1 border-t border-border" />
+        </div>
+      )}
+
+      {!isEditing && (
+        <>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".agnt,.zip"
+            className="hidden"
+            onChange={handleImportChange}
+          />
+          <button
+            type="button"
+            onClick={() => importFileRef.current?.click()}
+            disabled={importAgent.isPending}
+            className="w-full py-3 border border-dashed border-border rounded-lg text-sm text-text-muted hover:text-text-secondary hover:border-text-muted transition-colors cursor-pointer"
+          >
+            {importAgent.isPending ? 'Importing...' : 'Import an existing agent (.agnt)'}
+          </button>
+        </>
+      )}
     </form>
   );
 }

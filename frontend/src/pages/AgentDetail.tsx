@@ -190,7 +190,7 @@ export function AgentDetail() {
     const link = document.createElement('a');
     const safeName = (agent.name || agent.id).trim().replace(/\s+/g, '-').toLowerCase();
     link.href = url;
-    link.download = `${safeName || agent.id}.zip`;
+    link.download = `${safeName || agent.id}.agnt`;
     document.body.appendChild(link);
     link.click();
     link.remove();

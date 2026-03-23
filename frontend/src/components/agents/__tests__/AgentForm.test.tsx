@@ -11,6 +11,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('../../../hooks/useAgents', () => ({
   useCreateAgent: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateAgent: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useImportAgentPackage: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('../../../hooks/useProviders', () => ({

@@ -40,7 +40,7 @@ export function AgentList() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".zip"
+        accept=".agnt,.zip"
         className="hidden"
         onChange={handleImportChange}
       />

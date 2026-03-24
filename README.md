@@ -22,7 +22,8 @@ Then install at least one CLI agent tool:
 
 ```bash
 # Pick one (or add your own to providers.yaml)
-npm install -g @anthropic-ai/claude-code && claude auth    # Claude Code
+curl -fsSL https://claude.ai/install.sh | bash              # Claude Code (Linux/macOS)
+irm https://claude.ai/install.ps1 | iex                    # Claude Code (Windows)
 npm install -g @openai/codex                               # Codex
 npm install -g @google/gemini-cli                           # Gemini CLI
 ```

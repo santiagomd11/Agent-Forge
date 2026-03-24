@@ -480,7 +480,7 @@ function Main {
     Write-Host ""
     Ok "To get started:"
     Ok "  1. Restart your terminal"
-    Ok "  2. Install a CLI provider (e.g. npm install -g @anthropic-ai/claude-code)"
+    Ok "  2. Install a CLI provider (e.g. irm https://claude.ai/install.ps1 | iex)"
     Ok "  3. Run: forge start"
     Write-Host ""
 }

@@ -232,7 +232,8 @@ function Stop-Forge {
             if ($procId) {
                 $proc = Get-Process -Id $procId -ErrorAction SilentlyContinue
                 if ($proc) {
-                    Stop-Process -Id $procId -Force
+                    # taskkill /T kills the entire process tree (e.g. npm.cmd -> node.exe)
+                    & taskkill /PID $procId /T /F 2>$null | Out-Null
                     Info "Stopped $service (PID $procId)"
                     $stopped = $true
                 }

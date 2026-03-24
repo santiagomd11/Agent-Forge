@@ -562,7 +562,7 @@ main() {
     echo ""
     ok "To get started:"
     ok "  1. Restart your terminal (or run: source ~/.bashrc)"
-    ok "  2. Install a CLI provider (e.g. npm install -g @anthropic-ai/claude-code)"
+    ok "  2. Install a CLI provider (e.g. curl -fsSL https://claude.ai/install.sh | bash)"
     ok "  3. Run: forge start"
     echo ""
 }

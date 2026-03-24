@@ -153,9 +153,11 @@ class TestRemovePathEntry:
         assert "/b" in entries
         assert "/c" in entries
 
+    @patch("api.utils.platform.os")
     @patch("api.utils.platform.sys")
-    def test_case_insensitive_on_windows(self, mock_sys):
+    def test_case_insensitive_on_windows(self, mock_sys, mock_os):
         mock_sys.platform = "win32"
+        mock_os.pathsep = ";"
         path_str = "C:\\Users\\Foo\\bin;C:\\Python39;C:\\Windows"
         result = remove_path_entry(path_str, "c:\\users\\foo\\bin")
         assert "C:\\Users\\Foo\\bin" not in result.split(";")
@@ -201,12 +203,14 @@ class TestNewSessionKwargs:
         result = new_session_kwargs()
         assert result == {"start_new_session": True}
 
+    @patch("api.utils.platform.subprocess")
     @patch("api.utils.platform.sys")
-    def test_windows_returns_creation_flags(self, mock_sys):
+    def test_windows_returns_creation_flags(self, mock_sys, mock_subprocess):
         mock_sys.platform = "win32"
+        mock_subprocess.CREATE_NEW_PROCESS_GROUP = 0x00000200
         result = new_session_kwargs()
         assert "creationflags" in result
-        assert result["creationflags"] == subprocess.CREATE_NEW_PROCESS_GROUP
+        assert result["creationflags"] == 0x00000200
 
     def test_returns_dict(self):
         result = new_session_kwargs()

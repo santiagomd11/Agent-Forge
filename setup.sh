@@ -252,11 +252,13 @@ cmd_start() {
         return 1
     fi
 
-    # Start frontend (pass ports so Vite reads them)
+    # Start frontend (pass ports so Vite reads them).
+    # Run npx vite directly instead of npm run dev to avoid an intermediate
+    # npm process that exits and orphans the vite child (breaking forge stop).
     info "Starting frontend..."
     cd "$FORGE_REPO/frontend"
     AGENT_FORGE_PORT="$API_PORT" AGENT_FORGE_FRONTEND_PORT="$FRONTEND_PORT" \
-        npm run dev > "$FORGE_HOME/frontend.log" 2>&1 &
+        npx vite > "$FORGE_HOME/frontend.log" 2>&1 &
     local front_pid=$!
     echo $front_pid > "$PID_DIR/frontend.pid"
 

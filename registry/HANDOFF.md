@@ -1,6 +1,6 @@
 # Registry Module Handoff
 
-## Status: IN PROGRESS
+## Status: CORE COMPLETE -- moving to bug hunting and E2E testing
 
 ## Branch: feat/registry-cli
 

@@ -54,7 +54,7 @@ def _cu_venv_python() -> str:
 
 def _mcp_json_content(cache_enabled: bool = True) -> dict:
     """Build .mcp.json content with platform-correct values."""
-    env = {"AGENT_FORGE_DEBUG": "1"}
+    env = {"AGENT_FORGE_DEBUG": "1", "PYTHONPATH": str(PROJECT_ROOT)}
     if not cache_enabled:
         env["AGENT_FORGE_CACHE_ENABLED"] = "0"
     return {
@@ -101,6 +101,7 @@ def _codex_mcp_section(cache_enabled: bool = True) -> str:
         '',
         '[mcp_servers.computer-use.env]',
         'AGENT_FORGE_DEBUG = "1"',
+        f'PYTHONPATH = "{cwd}"',
     ]
     if not cache_enabled:
         lines.append('AGENT_FORGE_CACHE_ENABLED = "0"')

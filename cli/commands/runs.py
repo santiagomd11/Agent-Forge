@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from cli.http import api_get, api_post
+from cli.client import api_get, api_post
 from cli.output import print_table, print_kv, print_success, print_warning, format_status, status_text
 
 

@@ -9,7 +9,7 @@ import urllib.request
 
 import click
 
-from cli.http import api_get, api_post, api_put, api_delete
+from cli.client import api_get, api_post, api_put, api_delete
 from cli.output import (
     print_table, print_kv, print_success, print_warning, print_info,
     format_status, status_text, wait_with_spinner,

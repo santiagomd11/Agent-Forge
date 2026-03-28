@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from cli.http import api_get
+from cli.client import api_get
 
 _STATUS_STYLES = {
     "ready": "pale_green3",
@@ -100,8 +100,8 @@ def print_error(msg: str):
 
 
 _SPINNER_STYLE = "dots"
-_DEFAULT_POLL_INTERVAL = 2.0
-_DEFAULT_TIMEOUT = 300.0
+_DEFAULT_POLL_INTERVAL = 3.0
+_DEFAULT_TIMEOUT = 600.0
 
 
 def wait_with_spinner(ctx, path: str, done_fn, message: str,

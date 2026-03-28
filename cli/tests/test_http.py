@@ -1,4 +1,4 @@
-"""Tests for cli.http -- HTTP client for the API."""
+"""Tests for cli.client -- HTTP client for the API."""
 
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -8,7 +8,7 @@ from unittest import mock
 import click
 import pytest
 
-from cli.http import api_get, api_post, api_delete, api_put, is_api_running
+from cli.client import api_get, api_post, api_delete, api_put, is_api_running
 
 
 @pytest.fixture

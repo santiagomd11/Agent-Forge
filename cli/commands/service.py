@@ -87,6 +87,17 @@ def _wait_for_api(port: int, timeout: int = _API_STARTUP_TIMEOUT) -> bool:
     return False
 
 
+def _wait_for_frontend(port: int, timeout: int = 10) -> bool:
+    for _ in range(timeout):
+        try:
+            req = urllib.request.Request(f"http://127.0.0.1:{port}")
+            urllib.request.urlopen(req, timeout=2)
+            return True
+        except Exception:
+            time.sleep(1)
+    return False
+
+
 def _detect_frontend_port(log_path: Path, default: int,
                           timeout: float = _FRONTEND_PORT_TIMEOUT) -> int:
     elapsed = 0.0
@@ -209,13 +220,14 @@ def start(api_port, frontend_port):
     )
     _write_pid("frontend", fe_proc.pid)
 
-    time.sleep(1)
-    if fe_proc.poll() is not None:
-        print_warning(f"Frontend failed. Check {FORGE_HOME / 'frontend.log'}")
+    actual_fe = _detect_frontend_port(FORGE_HOME / "frontend.log", frontend_port)
+
+    # Verify frontend is actually responding, not just alive
+    if not _wait_for_frontend(actual_fe):
+        print_warning(f"Frontend failed to start. Check {FORGE_HOME / 'frontend.log'}")
         print_success(f"API is running at http://localhost:{api_port}")
         return
 
-    actual_fe = _detect_frontend_port(FORGE_HOME / "frontend.log", frontend_port)
     print_success("Agent Forge is running!")
     print_success(f"  Frontend: http://localhost:{actual_fe}")
     print_success(f"  API:      http://localhost:{api_port}")

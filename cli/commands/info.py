@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from cli.http import api_get
+from cli.client import api_get
 from cli.output import print_kv, format_status
 
 

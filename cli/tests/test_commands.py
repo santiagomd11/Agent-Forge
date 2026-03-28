@@ -1,6 +1,6 @@
 """Tests for cli/commands -- info, agents, runs.
 
-All API commands use a mocked HTTP layer via patching cli.http functions.
+All API commands use a mocked HTTP layer via patching cli.client functions.
 """
 
 from unittest import mock

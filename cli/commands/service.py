@@ -18,8 +18,10 @@ import click
 
 from cli.output import print_info, print_success, print_warning, print_error, print_table, status_text
 
-FORGE_HOME = Path.home() / ".forge"
-FORGE_REPO = FORGE_HOME / "Agent-Forge"
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+FORGE_HOME = Path(os.environ.get("FORGE_HOME", Path.home() / ".forge"))
+FORGE_REPO = Path(os.environ.get("FORGE_REPO", _PROJECT_ROOT))
 PID_DIR = FORGE_HOME / "pids"
 
 _API_STARTUP_TIMEOUT = 15
@@ -190,17 +192,19 @@ def start(api_port, frontend_port):
         print_warning(f"API failed to start. Check {FORGE_HOME / 'api.log'}")
         raise SystemExit(1)
 
-    # Start frontend
-    npx = _find_npx()
-    if not npx:
-        print_warning("npx not found. Frontend will not start.")
+    # Start frontend directly via node_modules/.bin/vite
+    # npx forks a child so the wrapper PID exits, making PID tracking unreliable
+    frontend_dir = FORGE_REPO / "frontend"
+    vite_path = shutil.which("vite", path=str(frontend_dir / "node_modules" / ".bin"))
+    if not vite_path:
+        print_warning("Frontend not found. Run setup first.")
         print_success(f"API is running at http://localhost:{api_port}")
         return
 
     print_info("Starting frontend...")
     fe_log = open(FORGE_HOME / "frontend.log", "w")
     fe_proc = subprocess.Popen(
-        [npx, "vite"], cwd=str(FORGE_REPO / "frontend"),
+        [vite_path], cwd=str(frontend_dir),
         env=env, stdout=fe_log, stderr=subprocess.STDOUT,
         **_session_kwargs(),
     )

@@ -87,6 +87,13 @@ function SetupRepo {
         Info "Agent Forge repo already exists, pulling latest..."
         & { $ErrorActionPreference = 'SilentlyContinue'; git -C $FORGE_REPO pull --ff-only origin master 2>$null }
         if ($LASTEXITCODE -ne 0) { Warn "Could not pull latest (offline?)" }
+        # Restore tracked files that were deleted locally (without overwriting modified files)
+        $deleted = git -C $FORGE_REPO diff --name-only --diff-filter=D 2>$null
+        if ($deleted) {
+            Push-Location $FORGE_REPO
+            $deleted | ForEach-Object { git checkout -- $_ 2>$null }
+            Pop-Location
+        }
     } else {
         Info "Cloning Agent Forge..."
         New-Item -ItemType Directory -Force -Path $FORGE_HOME | Out-Null

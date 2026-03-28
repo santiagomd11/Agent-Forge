@@ -65,7 +65,9 @@ def cu_enable(ctx):
 @click.pass_context
 def cu_disable(ctx):
     """Disable computer use."""
-    api_put(ctx, "/api/settings/computer-use", {"enabled": False})
+    console = Console()
+    with console.status("Disabling computer use...", spinner="dots"):
+        api_put(ctx, "/api/settings/computer-use", {"enabled": False})
     print_success("Computer use disabled")
 
 

@@ -262,7 +262,7 @@ def _prompt_inputs(ctx, agent: dict, schema: list[dict]) -> dict:
         ftype = field.get("type", "text")
         required = field.get("required", False)
         desc = field.get("description", "")
-        label = field.get("label", name)
+        label = field.get("label") or name
 
         prompt_text = f"  {label}"
         if desc:

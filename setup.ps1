@@ -39,13 +39,22 @@ function InstallGit {
     if (-not (CommandExists "git")) { Fail "Git installation failed." }
 }
 
+function PythonOk {
+    $pyCmd = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $pyCmd) { return $false }
+    # Reject Microsoft Store stub that opens the Store instead of running Python
+    if ($pyCmd.Source -like "*WindowsApps*") { return $false }
+    try {
+        $ver = & python -c "import sys; print(sys.version_info.minor)" 2>$null
+        return ($null -ne $ver -and [int]$ver -ge 12)
+    } catch { return $false }
+}
+
 function InstallPython {
-    if (CommandExists "python") {
+    if (PythonOk) {
         $ver = python -c "import sys; print(sys.version_info.minor)" 2>$null
-        if ($ver -ge 12) {
-            Info "Python 3.$ver already installed."
-            return
-        }
+        Info "Python 3.$ver already installed."
+        return
     }
     Info "Installing Python 3.12..."
     EnsureWinget
@@ -87,27 +96,41 @@ function SetupRepo {
 
 function SetupApi {
     Info "Setting up API..."
-    Set-Location $FORGE_REPO
-    if (-not (Test-Path "api\.venv")) {
-        python -m venv api\.venv
-    }
-    & api\.venv\Scripts\pip.exe install -q -r api\requirements.txt
-    New-Item -ItemType Directory -Force -Path data | Out-Null
+    Push-Location $FORGE_REPO
+    try {
+        # Recreate venv if missing or broken (e.g. pip not installed)
+        $venvPip = "api\.venv\Scripts\pip.exe"
+        if (-not (Test-Path "api\.venv") -or -not (Test-Path $venvPip)) {
+            if (Test-Path "api\.venv") { Remove-Item "api\.venv" -Recurse -Force }
+            python -m venv api\.venv
+            if (-not (Test-Path $venvPip)) { Fail "Failed to create API virtual environment." }
+        }
+        & $venvPip install -q -r api\requirements.txt
+        New-Item -ItemType Directory -Force -Path data | Out-Null
+    } finally { Pop-Location }
 }
 
 function SetupForgeScripts {
     Info "Setting up forge scripts..."
-    Set-Location $FORGE_REPO
-    if (-not (Test-Path "forge\scripts\.venv")) {
-        python -m venv forge\scripts\.venv
-    }
-    & forge\scripts\.venv\Scripts\pip.exe install -q -r forge\scripts\requirements.txt
+    Push-Location $FORGE_REPO
+    try {
+        # Recreate venv if missing or broken
+        $venvPip = "forge\scripts\.venv\Scripts\pip.exe"
+        if (-not (Test-Path "forge\scripts\.venv") -or -not (Test-Path $venvPip)) {
+            if (Test-Path "forge\scripts\.venv") { Remove-Item "forge\scripts\.venv" -Recurse -Force }
+            python -m venv forge\scripts\.venv
+            if (-not (Test-Path $venvPip)) { Fail "Failed to create forge scripts virtual environment." }
+        }
+        & $venvPip install -q -r forge\scripts\requirements.txt
+    } finally { Pop-Location }
 }
 
 function SetupFrontend {
     Info "Setting up frontend..."
-    Set-Location "$FORGE_REPO\frontend"
-    npm.cmd install --silent
+    Push-Location "$FORGE_REPO\frontend"
+    try {
+        npm.cmd install --silent
+    } finally { Pop-Location }
 }
 
 # ---------------------------------------------------------------------------
@@ -131,8 +154,13 @@ $FORGE_REPO = "$FORGE_HOME\Agent-Forge"
 $PID_DIR = "$FORGE_HOME\pids"
 
 # Ports -- flags > env vars > defaults
-$API_PORT = if ($ApiPort) { $ApiPort } elseif ($env:AGENT_FORGE_PORT) { $env:AGENT_FORGE_PORT } else { "8000" }
-$FRONTEND_PORT = if ($FrontendPort) { $FrontendPort } elseif ($env:AGENT_FORGE_FRONTEND_PORT) { $env:AGENT_FORGE_FRONTEND_PORT } else { "3000" }
+if ($ApiPort) { $API_PORT = $ApiPort }
+elseif ($env:AGENT_FORGE_PORT) { $API_PORT = $env:AGENT_FORGE_PORT }
+else { $API_PORT = "8000" }
+
+if ($FrontendPort) { $FRONTEND_PORT = $FrontendPort }
+elseif ($env:AGENT_FORGE_FRONTEND_PORT) { $FRONTEND_PORT = $env:AGENT_FORGE_FRONTEND_PORT }
+else { $FRONTEND_PORT = "3000" }
 
 function Info($msg)  { Write-Host "[forge] $msg" -ForegroundColor Cyan }
 function Ok($msg)    { Write-Host "[forge] $msg" -ForegroundColor Green }
@@ -173,14 +201,16 @@ function Start-Forge {
     $env:PYTHONPATH = $FORGE_REPO
     $env:AGENT_FORGE_PORT = $API_PORT
     $env:AGENT_FORGE_FRONTEND_PORT = $FRONTEND_PORT
-    $apiProc = Start-Process -FilePath "api\.venv\Scripts\python.exe" `
-        -ArgumentList "-m", "uvicorn", "api.main:app", "--host", "127.0.0.1", "--port", $API_PORT `
+    # Launch uvicorn via cmd /c so we can merge stderr into stdout with 2>&1.
+    # PowerShell's Start-Process cannot redirect both streams to the same file.
+    $pyExe = "$FORGE_REPO\api\.venv\Scripts\python.exe"
+    $apiProc = Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "`"$pyExe`" -m uvicorn api.main:app --host 127.0.0.1 --port $API_PORT > `"$FORGE_HOME\api.log`" 2>&1" `
         -WorkingDirectory $FORGE_REPO `
         -WindowStyle Hidden `
-        -PassThru `
-        -RedirectStandardOutput "$FORGE_HOME\api.log" `
-        -RedirectStandardError "$FORGE_HOME\api.err"
-    $apiProc.Id | Out-File $apiPidFile
+        -PassThru
+    # Write PID as plain ASCII to avoid UTF-16 BOM that breaks parsers on PS 5.1
+    $apiProc.Id | Set-Content $apiPidFile -Encoding ASCII
 
     # Wait for API
     $apiReady = $false
@@ -192,7 +222,7 @@ function Start-Forge {
         } catch { Start-Sleep 1 }
     }
     if (-not $apiReady) {
-        Warn "API failed to start. Check $FORGE_HOME\api.err for details."
+        Warn "API failed to start. Check $FORGE_HOME\api.log for details."
         return
     }
 
@@ -205,8 +235,10 @@ function Start-Forge {
             -ArgumentList "run", "dev" `
             -WorkingDirectory "$FORGE_REPO\frontend" `
             -WindowStyle Hidden `
-            -PassThru
-        $frontProc.Id | Out-File "$PID_DIR\frontend.pid"
+            -PassThru `
+            -RedirectStandardOutput "$FORGE_HOME\frontend.log" `
+            -RedirectStandardError "$FORGE_HOME\frontend.err"
+        $frontProc.Id | Set-Content "$PID_DIR\frontend.pid" -Encoding ASCII
     } catch {
         Warn "Failed to start frontend: $_"
         Ok "API is running at http://localhost:$API_PORT (frontend failed)"
@@ -267,18 +299,35 @@ function Update-Forge {
     git pull --ff-only origin master
     if ($LASTEXITCODE -ne 0) { Warn "Could not pull (check your network)"; return }
 
+    # Restore tracked files that were deleted locally (without overwriting modified files)
+    $deleted = git diff --name-only --diff-filter=D 2>$null
+    if ($deleted) {
+        $deleted | ForEach-Object { git checkout -- $_ 2>$null }
+    }
+
     $newApiHash = (Get-FileHash api\requirements.txt -ErrorAction SilentlyContinue).Hash
     $newFrontHash = (Get-FileHash frontend\package.json -ErrorAction SilentlyContinue).Hash
 
     if ($apiHash -ne $newApiHash) {
         Info "API dependencies changed, reinstalling..."
-        & api\.venv\Scripts\pip.exe install -q -r api\requirements.txt
+        & api\.venv\Scripts\python.exe -m pip install -q -r api\requirements.txt
     }
     if ($frontHash -ne $newFrontHash) {
         Info "Frontend dependencies changed, reinstalling..."
         Set-Location frontend; npm.cmd install --silent; Set-Location ..
     }
 
+    # Restart services if they were running
+    $apiPidFile = "$PID_DIR\api.pid"
+    if (Test-Path $apiPidFile) {
+        $procId = (Get-Content $apiPidFile).Trim()
+        if ($procId -and (Get-Process -Id $procId -ErrorAction SilentlyContinue)) {
+            Info "Restarting services..."
+            Stop-Forge
+            Start-Forge
+            return
+        }
+    }
     Ok "Update complete. Run 'forge start' to start."
 }
 
@@ -303,14 +352,14 @@ function Start-ForgeApi {
     $env:PYTHONPATH = $FORGE_REPO
     $env:AGENT_FORGE_PORT = $API_PORT
     $env:AGENT_FORGE_FRONTEND_PORT = $FRONTEND_PORT
-    $apiProc = Start-Process -FilePath "api\.venv\Scripts\python.exe" `
-        -ArgumentList "-m", "uvicorn", "api.main:app", "--host", "127.0.0.1", "--port", $API_PORT `
+    # Launch uvicorn via cmd /c so we can merge stderr into stdout with 2>&1
+    $pyExe = "$FORGE_REPO\api\.venv\Scripts\python.exe"
+    $apiProc = Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "`"$pyExe`" -m uvicorn api.main:app --host 127.0.0.1 --port $API_PORT > `"$FORGE_HOME\api.log`" 2>&1" `
         -WorkingDirectory $FORGE_REPO `
         -WindowStyle Hidden `
-        -PassThru `
-        -RedirectStandardOutput "$FORGE_HOME\api.log" `
-        -RedirectStandardError "$FORGE_HOME\api.err"
-    $apiProc.Id | Out-File $apiPidFile
+        -PassThru
+    $apiProc.Id | Set-Content $apiPidFile -Encoding ASCII
     $apiReady = $false
     for ($i = 0; $i -lt 15; $i++) {
         try {
@@ -322,7 +371,7 @@ function Start-ForgeApi {
     if ($apiReady) {
         Ok "API is running at http://localhost:$API_PORT"
     } else {
-        Warn "API failed to start. Check $FORGE_HOME\api.err for details."
+        Warn "API failed to start. Check $FORGE_HOME\api.log for details."
     }
 }
 
@@ -401,6 +450,9 @@ function Get-ForgeInfo {
 function Get-ForgeLogs {
     if (Test-Path "$FORGE_HOME\api.log") {
         Get-Content "$FORGE_HOME\api.log" -Wait -Tail 50
+    } elseif (Test-Path "$FORGE_HOME\api.err") {
+        # Fallback for older installs that still split stdout/stderr
+        Get-Content "$FORGE_HOME\api.err" -Wait -Tail 50
     } else {
         Warn "No logs found. Is Agent Forge running?"
     }
@@ -453,13 +505,24 @@ switch ($Command) {
 
     # Save as _forge.ps1 (underscore prefix) so PowerShell doesn't resolve it
     # directly when user types "forge". The .bat wrapper calls it with -ExecutionPolicy Bypass.
-    $forgeScript | Out-File -FilePath "$FORGE_BIN\_forge.ps1" -Encoding UTF8
+    # Use .NET to write UTF-8 without BOM; PS 5.1's -Encoding UTF8 adds a BOM
+    [System.IO.File]::WriteAllText("$FORGE_BIN\_forge.ps1", $forgeScript)
 
     # Remove old forge.ps1 if present (from previous installs)
     if (Test-Path "$FORGE_BIN\forge.ps1") { Remove-Item "$FORGE_BIN\forge.ps1" }
 
     # Batch wrapper — entry point for both cmd.exe and PowerShell
-    $batchWrapper = "@echo off`r`npowershell -ExecutionPolicy Bypass -File `"%USERPROFILE%\.forge\bin\_forge.ps1`" %*"
+    # Translates Unix-style flags (--api-port) to PowerShell-style (-ApiPort)
+    # Uses delayed expansion to avoid issues with special characters in args
+    $batchWrapper = @"
+@echo off
+setlocal enabledelayedexpansion
+set "args=%*"
+set "args=!args:--api-port=-ApiPort!"
+set "args=!args:--frontend-port=-FrontendPort!"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\.forge\bin\_forge.ps1" !args!
+endlocal
+"@
     $batchWrapper | Out-File -FilePath "$FORGE_BIN\forge.bat" -Encoding ASCII
 }
 

@@ -65,7 +65,15 @@ install_git() {
     info "Installing git..."
     case "$OS" in
         linux|wsl)
-            sudo apt-get update -qq && sudo apt-get install -y -qq git
+            if command_exists apt-get; then
+                sudo apt-get update -qq && sudo apt-get install -y -qq git
+            elif command_exists dnf; then
+                sudo dnf install -y -q git
+            elif command_exists pacman; then
+                sudo pacman -S --noconfirm git
+            else
+                fail "No supported package manager found (apt-get, dnf, pacman). Install git manually and re-run."
+            fi
             ;;
         macos)
             install_homebrew
@@ -79,19 +87,31 @@ install_python() {
     info "Installing Python 3.12+..."
     case "$OS" in
         linux|wsl)
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq software-properties-common
-            sudo add-apt-repository -y ppa:deadsnakes/ppa
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq python3.12 python3.12-venv python3.12-dev
-            # Make python3.12 the default python3 if current one is too old
-            if ! python_ok; then
-                sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+            if command_exists apt-get; then
+                sudo apt-get update -qq
+                sudo apt-get install -y -qq software-properties-common
+                sudo add-apt-repository -y ppa:deadsnakes/ppa
+                sudo apt-get update -qq
+                sudo apt-get install -y -qq python3.12 python3.12-venv python3.12-dev
+                # Make python3.12 the default python3 if current one is too old
+                if ! python_ok; then
+                    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+                fi
+            elif command_exists dnf; then
+                sudo dnf install -y -q python3.12 python3.12-devel
+            elif command_exists pacman; then
+                sudo pacman -S --noconfirm python
+            else
+                fail "No supported package manager found (apt-get, dnf, pacman). Install Python 3.12+ manually and re-run."
             fi
             ;;
         macos)
             install_homebrew
             brew install python@3.12
+            # Add Homebrew Python to PATH if system python3 is still too old
+            if ! python_ok; then
+                export PATH="$(brew --prefix python@3.12)/bin:$PATH"
+            fi
             ;;
     esac
     python_ok || fail "Python 3.12+ installation failed."
@@ -107,7 +127,11 @@ install_nvm_and_node() {
     if [ -z "${NVM_DIR:-}" ] || [ ! -d "${NVM_DIR:-}" ]; then
         info "Installing NVM..."
         export NVM_DIR="$HOME/.nvm"
-        curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
+        local nvm_tmp
+        nvm_tmp=$(mktemp)
+        curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" -o "$nvm_tmp"
+        bash "$nvm_tmp"
+        rm -f "$nvm_tmp"
         # Load NVM into current session
         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
     else
@@ -127,6 +151,12 @@ setup_repo() {
     if [ -d "$FORGE_REPO/.git" ]; then
         info "Agent Forge repo already exists, pulling latest..."
         git -C "$FORGE_REPO" pull --ff-only origin master || warn "Could not pull latest (offline?)"
+        # Restore tracked files that were deleted locally (without overwriting modified files)
+        local deleted
+        deleted=$(git -C "$FORGE_REPO" diff --name-only --diff-filter=D 2>/dev/null)
+        if [ -n "$deleted" ]; then
+            (cd "$FORGE_REPO" && echo "$deleted" | while IFS= read -r f; do git checkout -- "$f" 2>/dev/null; done)
+        fi
     else
         info "Cloning Agent Forge..."
         mkdir -p "$FORGE_HOME"
@@ -134,23 +164,46 @@ setup_repo() {
     fi
 }
 
+ensure_venv_module() {
+    # On Debian/Ubuntu, python3 ships without venv; install the matching package
+    if python3 -m venv --help >/dev/null 2>&1; then return; fi
+    info "Installing python3-venv package..."
+    local py_minor
+    py_minor=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null)
+    if command_exists apt-get; then
+        sudo apt-get install -y -qq "python3.${py_minor}-venv" || sudo apt-get install -y -qq python3-venv
+    elif command_exists dnf; then
+        sudo dnf install -y -q python3-libs
+    elif command_exists pacman; then
+        # On Arch, venv is included in the python package; reinstall to ensure it
+        sudo pacman -S --noconfirm python
+    fi
+    python3 -m venv --help >/dev/null 2>&1 || fail "python3 venv module is not available. Install it manually and re-run."
+}
+
 setup_api() {
     info "Setting up API..."
     cd "$FORGE_REPO"
-    if [ ! -d "api/.venv" ]; then
-        python3 -m venv api/.venv
+    # Recreate venv if missing or broken (e.g. pip not installed)
+    if [ ! -d "api/.venv" ] || ! api/.venv/bin/python3 -m pip --version >/dev/null 2>&1; then
+        rm -rf api/.venv
+        ensure_venv_module
+        python3 -m venv api/.venv || fail "Failed to create API virtual environment."
     fi
-    api/.venv/bin/pip install -q -r api/requirements.txt
+    api/.venv/bin/python3 -m pip install -q -r api/requirements.txt
     mkdir -p data
 }
 
 setup_forge_scripts() {
     info "Setting up forge scripts..."
     cd "$FORGE_REPO"
-    if [ ! -d "forge/scripts/.venv" ]; then
-        python3 -m venv forge/scripts/.venv
+    # Recreate venv if missing or broken
+    if [ ! -d "forge/scripts/.venv" ] || ! forge/scripts/.venv/bin/python3 -m pip --version >/dev/null 2>&1; then
+        rm -rf forge/scripts/.venv
+        ensure_venv_module
+        python3 -m venv forge/scripts/.venv || fail "Failed to create forge scripts virtual environment."
     fi
-    forge/scripts/.venv/bin/pip install -q -r forge/scripts/requirements.txt
+    forge/scripts/.venv/bin/python3 -m pip install -q -r forge/scripts/requirements.txt
 }
 
 setup_frontend() {
@@ -193,9 +246,13 @@ fail()  { printf "\033[1;31m[forge]\033[0m %s\n" "$*" >&2; exit 1; }
 parse_flags() {
     while [ $# -gt 0 ]; do
         case "$1" in
-            --api-port)      API_PORT="$2"; shift 2 ;;
-            --frontend-port) FRONTEND_PORT="$2"; shift 2 ;;
-            *)               shift ;;
+            --api-port)
+                if [ -z "${2:-}" ]; then fail "--api-port requires a value"; fi
+                API_PORT="$2"; shift 2 ;;
+            --frontend-port)
+                if [ -z "${2:-}" ]; then fail "--frontend-port requires a value"; fi
+                FRONTEND_PORT="$2"; shift 2 ;;
+            *)  shift ;;
         esac
     done
 }
@@ -205,7 +262,7 @@ detect_frontend_port() {
     local log="$FORGE_HOME/frontend.log"
     local actual_port=""
     for i in $(seq 1 20); do
-        actual_port=$(grep -oP 'localhost:\K[0-9]+' "$log" 2>/dev/null | head -1)
+        actual_port=$(grep -oE 'localhost:[0-9]+' "$log" 2>/dev/null | head -1 | cut -d: -f2)
         if [ -n "$actual_port" ]; then
             echo "$actual_port"
             return
@@ -309,46 +366,57 @@ _kill_tree() {
     local parent=$1
     # Find immediate children and kill their trees first
     local children
-    children=$(pgrep -P "$parent" 2>/dev/null)
+    children=$(pgrep -P "$parent" 2>/dev/null || true)
     for child in $children; do
         _kill_tree "$child"
     done
-    kill "$parent" 2>/dev/null
+    kill "$parent" 2>/dev/null || true
 }
 
 cmd_status() {
-    local running=0
+    local expected=0 running=0
     for service in api frontend; do
+        expected=$(( expected + 1 ))
         local pidfile="$PID_DIR/$service.pid"
         if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
             ok "$service is running (PID $(cat "$pidfile"))"
-            running=1
+            running=$(( running + 1 ))
         else
             warn "$service is not running"
         fi
     done
-    return $(( 1 - running ))
+    # Return success (0) only when all services are running
+    [ "$running" -eq "$expected" ]
 }
 
 cmd_update() {
     info "Updating Agent Forge..."
     cd "$FORGE_REPO"
 
+    # Cross-platform hash helper (md5sum on Linux, md5 on macOS)
+    _hash_file() {
+        if command -v md5sum >/dev/null 2>&1; then
+            md5sum "$1" 2>/dev/null | cut -d' ' -f1
+        else
+            md5 -q "$1" 2>/dev/null
+        fi
+    }
+
     # Track file hashes before pull
     local api_hash frontend_hash
-    api_hash=$(md5sum api/requirements.txt 2>/dev/null | cut -d' ' -f1)
-    frontend_hash=$(md5sum frontend/package.json 2>/dev/null | cut -d' ' -f1)
+    api_hash=$(_hash_file api/requirements.txt)
+    frontend_hash=$(_hash_file frontend/package.json)
 
     git pull --ff-only origin master || { warn "Could not pull (check your network)"; return 1; }
 
     # Reinstall deps if changed
     local new_api_hash new_frontend_hash
-    new_api_hash=$(md5sum api/requirements.txt 2>/dev/null | cut -d' ' -f1)
-    new_frontend_hash=$(md5sum frontend/package.json 2>/dev/null | cut -d' ' -f1)
+    new_api_hash=$(_hash_file api/requirements.txt)
+    new_frontend_hash=$(_hash_file frontend/package.json)
 
     if [ "$api_hash" != "$new_api_hash" ]; then
         info "API dependencies changed, reinstalling..."
-        api/.venv/bin/pip install -q -r api/requirements.txt
+        api/.venv/bin/python3 -m pip install -q -r api/requirements.txt
     fi
 
     if [ "$frontend_hash" != "$new_frontend_hash" ]; then
@@ -412,7 +480,8 @@ cmd_health() {
     response=$(curl -s "http://127.0.0.1:$API_PORT/api/health" 2>/dev/null) || {
         fail "API is not responding. Run 'forge start' first."
     }
-    echo "$response" | python3 -m json.tool 2>/dev/null || echo "$response"
+    local venv_py="$FORGE_REPO/api/.venv/bin/python3"
+    echo "$response" | "$venv_py" -m json.tool 2>/dev/null || echo "$response"
 }
 
 cmd_agents() {
@@ -420,7 +489,8 @@ cmd_agents() {
     response=$(curl -s "http://127.0.0.1:$API_PORT/api/agents" 2>/dev/null) || {
         fail "API is not responding. Run 'forge start' first."
     }
-    echo "$response" | python3 -c "
+    local venv_py="$FORGE_REPO/api/.venv/bin/python3"
+    echo "$response" | "$venv_py" -c "
 import sys, json
 agents = json.load(sys.stdin)
 if not agents:
@@ -443,7 +513,8 @@ cmd_providers() {
     response=$(curl -s "http://127.0.0.1:$API_PORT/api/providers" 2>/dev/null) || {
         fail "API is not responding. Run 'forge start' first."
     }
-    echo "$response" | python3 -c "
+    local venv_py="$FORGE_REPO/api/.venv/bin/python3"
+    echo "$response" | "$venv_py" -c "
 import sys, json
 providers = json.load(sys.stdin)
 if not providers:
@@ -465,8 +536,9 @@ cmd_info() {
     # Version
     local health
     health=$(curl -s "http://127.0.0.1:$API_PORT/api/health" 2>/dev/null)
+    local venv_py="$FORGE_REPO/api/.venv/bin/python3"
     if [ -n "$health" ]; then
-        echo "$health" | python3 -c "
+        echo "$health" | "$venv_py" -c "
 import sys, json
 d = json.load(sys.stdin)
 print(f'  Version:       {d.get(\"version\", \"unknown\")}')
@@ -555,17 +627,27 @@ FORGE_SCRIPT
 
 add_to_path() {
     local line="export PATH=\"$FORGE_BIN:\$PATH\""
+    local found=0
 
     for rcfile in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        if [ -f "$rcfile" ] || [ "$(basename "$rcfile")" = ".bashrc" ]; then
-            if ! grep -qF "$FORGE_BIN" "$rcfile" 2>/dev/null; then
-                echo "" >> "$rcfile"
-                echo "# Agent Forge" >> "$rcfile"
-                echo "$line" >> "$rcfile"
-                info "Added forge to PATH in $(basename "$rcfile")"
-            fi
+        if [ ! -f "$rcfile" ]; then continue; fi
+        if ! grep -qF "$FORGE_BIN" "$rcfile" 2>/dev/null; then
+            echo "" >> "$rcfile"
+            echo "# Agent Forge" >> "$rcfile"
+            echo "$line" >> "$rcfile"
+            info "Added forge to PATH in $(basename "$rcfile")"
         fi
+        found=1
     done
+
+    # If no rc file was found, create the default one for the current OS
+    if [ "$found" -eq 0 ]; then
+        local default_rc="$HOME/.bashrc"
+        if [ "$OS" = "macos" ]; then default_rc="$HOME/.zshrc"; fi
+        echo "# Agent Forge" >> "$default_rc"
+        echo "$line" >> "$default_rc"
+        info "Created $(basename "$default_rc") with forge PATH"
+    fi
 
     # Add to current session
     export PATH="$FORGE_BIN:$PATH"

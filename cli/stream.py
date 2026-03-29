@@ -83,22 +83,32 @@ async def _stream(ws_url: str, run_id: str, api_url: str, timeout: float):
                     name = data.get("name", "")
                     status.update(f"Running {name}...")
 
+                elif etype == "step_completed":
+                    status.stop()
+                    step_num = data.get("step_num", "?")
+                    step_name = data.get("step_name", "")
+                    step_status = data.get("status", "completed")
+                    duration = data.get("duration", 0)
+                    if len(step_name) > _MAX_STEP_NAME_LEN:
+                        step_name = step_name[:_MAX_STEP_NAME_LEN - 3] + "..."
+                    label = f"Step {step_num}: {step_name}"
+                    padded = label.ljust(_STEP_COMPLETE_PAD)
+                    result_text = "done" if step_status == "completed" else "FAILED"
+                    click.echo(f"  {padded} {result_text} ({format_duration(duration)})")
+                    current_step_num = None
+                    current_step_label = None
+                    status.start()
+
                 elif etype == "agent_log":
                     new_num, new_name = _extract_step(data, current_step_num)
                     if new_num is not None:
-                        if current_step_label:
-                            status.stop()
-                            _print_step_done(current_step_label, step_start)
                         current_step_num = new_num
                         current_step_label = f"Step {new_num}: {new_name}"
                         step_start = time.monotonic()
                         status.update(f"{current_step_label}...")
-                        status.start()
 
                 elif etype == "run_completed":
                     status.stop()
-                    if current_step_label:
-                        _print_step_done(current_step_label, step_start)
                     total = format_duration(time.monotonic() - run_start)
                     print_success(f"Run completed ({total})")
                     click.echo()
@@ -107,8 +117,6 @@ async def _stream(ws_url: str, run_id: str, api_url: str, timeout: float):
 
                 elif etype == "run_failed":
                     status.stop()
-                    if current_step_label:
-                        _print_step_done(current_step_label, step_start)
                     error = data.get("error", "Unknown error")
                     total = format_duration(time.monotonic() - run_start)
                     print_error(f"Run failed ({total}): {error}")

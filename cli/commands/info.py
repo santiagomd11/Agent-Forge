@@ -67,7 +67,6 @@ def cu_enable(ctx):
         print_warning("Computer use enabled but daemon failed to start.")
     else:
         print_success("Computer use enabled")
-    click.echo("  Restart Claude Code for MCP changes to take effect.")
 
 
 @computer_use.command("disable")

@@ -24,7 +24,7 @@ FORGE_HOME = Path(os.environ.get("FORGE_HOME", Path.home() / ".forge"))
 FORGE_REPO = Path(os.environ.get("FORGE_REPO", _PROJECT_ROOT))
 PID_DIR = FORGE_HOME / "pids"
 
-_API_STARTUP_TIMEOUT = 15
+_API_STARTUP_TIMEOUT = 30
 _FRONTEND_PORT_TIMEOUT = 5.0
 _FRONTEND_PORT_POLL = 0.25
 
@@ -74,6 +74,23 @@ def _kill_tree(pid: int):
         os.kill(pid, signal.SIGTERM)
     except (ProcessLookupError, PermissionError):
         pass
+
+
+def _port_in_use(port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def _kill_port(port: int):
+    if sys.platform == "win32":
+        subprocess.run(["powershell", "-Command",
+                        f"Get-NetTCPConnection -LocalPort {port} -ErrorAction SilentlyContinue | "
+                        f"ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force }}"],
+                       capture_output=True)
+    else:
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True)
 
 
 def _wait_for_api(port: int, timeout: int = _API_STARTUP_TIMEOUT) -> bool:
@@ -185,6 +202,10 @@ def start(api_port, frontend_port):
         print_warning("Agent Forge is already running. Use 'forge stop' first.")
         raise SystemExit(1)
 
+    if _port_in_use(api_port):
+        print_warning(f"Port {api_port} is already in use. Stop the existing process first.")
+        raise SystemExit(1)
+
     env = _build_env(api_port, frontend_port)
 
     # Start API
@@ -198,6 +219,12 @@ def start(api_port, frontend_port):
         **_session_kwargs(),
     )
     _write_pid("api", api_proc.pid)
+
+    time.sleep(1)
+    if api_proc.poll() is not None:
+        print_warning(f"API process died. Port {api_port} may be in use. Check {FORGE_HOME / 'api.log'}")
+        (PID_DIR / "api.pid").unlink(missing_ok=True)
+        raise SystemExit(1)
 
     if not _wait_for_api(api_port):
         print_warning(f"API failed to start. Check {FORGE_HOME / 'api.log'}")
@@ -238,12 +265,21 @@ def start(api_port, frontend_port):
 @click.command()
 def stop():
     """Stop all services."""
+    api_port = _default_port("AGENT_FORGE_PORT", 8000)
+    frontend_port = _default_port("AGENT_FORGE_FRONTEND_PORT", 3000)
+    service_ports = {"api": api_port, "frontend": frontend_port}
+
     stopped = False
     for service in ("api", "frontend"):
         pid = _read_pid(service)
         if pid:
             _kill_tree(pid)
             print_info(f"Stopped {service} (PID {pid})")
+            (PID_DIR / f"{service}.pid").unlink(missing_ok=True)
+            stopped = True
+        elif _port_in_use(service_ports[service]):
+            _kill_port(service_ports[service])
+            print_info(f"Stopped {service} on port {service_ports[service]}")
             (PID_DIR / f"{service}.pid").unlink(missing_ok=True)
             stopped = True
     if not stopped:

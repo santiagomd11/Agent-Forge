@@ -1,8 +1,72 @@
-# Agent Forge
+<p align="center">
+  <img src="frontend/public/pet.svg" alt="Agent Forge Mascot" width="200" />
+</p>
 
-Independent agents that can operate on any task, no matter how complex.
+<h1 align="center">Agent Forge</h1>
+
+<p align="center">
+  Independent agents that can operate on any task, no matter how complex.
+</p>
 
 Agent Forge gives AI agents the ability to think through problems (forge) and interact with the real world (computer use). Each module works on its own or together with the others. Cross-platform: runs on Windows, Linux, and macOS (Work progres).
+
+## Technologies
+
+### Frontend
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" /> | React | 19.2 | UI framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="25" /> | TypeScript | 5.9 | Type-safe JavaScript |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitejs/vitejs-original.svg" width="25" /> | Vite | 7.3 | Build tool and dev server |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" width="25" /> | Tailwind CSS | 4.2 | Utility-first CSS framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" style="filter: hue-rotate(140deg);" /> | TanStack Query | 5.90 | Data fetching and state management |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/reactrouter/reactrouter-original.svg" width="25" /> | React Router | 7.13 | Client-side routing |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitest/vitest-original.svg" width="25" /> | Vitest | 4.0 | Unit testing framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/eslint/eslint-original.svg" width="25" /> | ESLint | 9.39 | Code linting |
+
+</div>
+
+### Backend
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="25" /> | FastAPI | 0.115 | Web framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Python | 3.12 | Runtime language |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" width="25" /> | SQLite | 3 | Relational database |
+| <img src="https://cdn.simpleicons.org/pydantic/E92063" width="28" /> | Pydantic | 2.10 | Data validation |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/socketio/socketio-original.svg" width="25" /> | WebSockets | 14.0 | Real-time communication |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytest/pytest-original.svg" width="25" /> | pytest | 8.0 | Testing framework |
+
+</div>
+
+### Desktop Automation
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Pillow | 10.0 | Image processing |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-plain.svg" width="25" /> | mss | 9.0 | Screenshot capture |
+| <img src="https://cdn.simpleicons.org/anthropic/white" width="25" /> | MCP | 1.0 | Standardized tool interface |
+
+</div>
+
+### Paltform
+
+<div align="left">
+
+|  | Technology | Status | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="25" /> | Linux | Stable | Primary platform |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg" width="25" /> | Windows / WSL2 | Stable | Supported platform |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apple/apple-original.svg" width="25" /> | macOS | WIP | Work in progress |
+
+</div>
 
 ## Install
 

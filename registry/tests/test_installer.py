@@ -12,6 +12,7 @@ from registry.installer import (
     get_installed,
     _peek_manifest,
 )
+from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
 
 
 class TestPeekManifest:
@@ -36,7 +37,7 @@ class TestInstall:
         result = install(sample_agnt_file, agents_dir=agents_dir)
         assert result == agents_dir / "test-agent"
         assert result.is_dir()
-        assert (result / "manifest.json").exists()
+        assert (result / MANIFEST_FILENAME).exists()
         assert (result / "agentic.md").exists()
 
     def test_install_refuses_overwrite_without_force(self, sample_agnt_file, tmp_path):

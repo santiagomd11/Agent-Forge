@@ -5,6 +5,7 @@ import zipfile
 import pytest
 from pathlib import Path
 
+from registry.manifest import MANIFEST_FILENAME
 from registry.packer import (
     pack,
     unpack,
@@ -143,19 +144,15 @@ class TestPack:
         assert output.exists()
         assert zipfile.is_zipfile(output)
 
-    def test_pack_contains_manifest(self, sample_agent_folder, tmp_path):
-        output = pack(sample_agent_folder, output=tmp_path / "test.agnt")
-        with zipfile.ZipFile(output) as zf:
-            assert "manifest.json" in zf.namelist()
-            data = json.loads(zf.read("manifest.json"))
-            assert data["name"] == "test-agent"
-
-    def test_pack_contains_agent_files(self, sample_agent_folder, tmp_path):
+    def test_pack_contains_manifest_and_bundle(self, sample_agent_folder, tmp_path):
         output = pack(sample_agent_folder, output=tmp_path / "test.agnt")
         with zipfile.ZipFile(output) as zf:
             names = zf.namelist()
-            assert "agentic.md" in names
-            assert any("step_01" in n for n in names)
+            assert MANIFEST_FILENAME in names
+            assert "agent.bundle" in names
+            data = json.loads(zf.read(MANIFEST_FILENAME))
+            assert data["name"] == "test-agent"
+            assert data["export_version"] == 2
 
     def test_pack_default_output_name(self, sample_agent_folder):
         import os
@@ -186,8 +183,10 @@ class TestPack:
         (output_dir / "logs.json").write_text("{}")
 
         result = pack(sample_agent_folder, output=tmp_path / "test.agnt")
-        with zipfile.ZipFile(result) as zf:
-            assert not any("output/" in n for n in zf.namelist())
+        # Unpack and verify the excluded dir is not in the bundle
+        dest = tmp_path / "verify"
+        unpack(result, dest)
+        assert not (dest / "output").exists()
 
 
 class TestUnpack:
@@ -196,7 +195,13 @@ class TestUnpack:
         dest = tmp_path / "unpacked"
         manifest = unpack(sample_agnt_file, dest)
         assert manifest.name == "test-agent"
-        assert (dest / "manifest.json").exists()
+        assert (dest / MANIFEST_FILENAME).exists()
+        assert (dest / "agentic.md").exists()
+
+    def test_unpack_legacy_format(self, legacy_agnt_file, tmp_path):
+        dest = tmp_path / "unpacked-legacy"
+        manifest = unpack(legacy_agnt_file, dest)
+        assert manifest.name == "test-agent"
         assert (dest / "agentic.md").exists()
 
     def test_unpack_missing_file_raises(self, tmp_path):
@@ -213,7 +218,7 @@ class TestUnpack:
         agnt = tmp_path / "no-manifest.agnt"
         with zipfile.ZipFile(agnt, "w") as zf:
             zf.writestr("agentic.md", "# Test\n")
-        with pytest.raises(ValueError, match="missing manifest"):
+        with pytest.raises(ValueError, match="missing"):
             unpack(agnt, tmp_path / "out")
 
     def test_pack_then_unpack_roundtrip(self, sample_agent_folder, tmp_path):

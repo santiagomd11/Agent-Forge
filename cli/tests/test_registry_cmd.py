@@ -120,6 +120,37 @@ class TestRegistryPullApiSync:
             # Should warn that API registration failed
             assert "API registration failed" in result.output
 
+    def test_pull_api_failure_shows_reason(self, runner):
+        """Error message should include the actual failure reason for debugging."""
+        from cli.commands.registry import registry_group
+
+        with mock.patch("cli.commands.registry.registry_client") as m_reg, \
+             mock.patch("cli.commands.agents._upload_agnt") as m_upload:
+            m_reg.pull.return_value = "/home/user/.forge/agents/test-agent"
+            m_upload.side_effect = Exception("Import failed: 422 Unprocessable Entity")
+
+            result = runner.invoke(registry_group, ["pull", "test-agent"])
+
+            assert result.exit_code == 0
+            # Should show the actual error so users can debug
+            assert "422" in result.output or "Import failed" in result.output
+
+    def test_pull_api_failure_preserves_archive(self, runner, tmp_path):
+        """When API import fails, the .agnt archive should be kept for manual import."""
+        from cli.commands.registry import _import_to_api
+        from pathlib import Path
+
+        archive = tmp_path / "test-agent.agnt"
+        archive.write_bytes(b"fake archive")
+
+        with mock.patch("cli.commands.agents._upload_agnt") as m_upload:
+            m_upload.side_effect = Exception("Connection refused")
+            ctx = mock.MagicMock()
+            _import_to_api(ctx, "test-agent", archive)
+
+        # Archive should still exist so user can manually import
+        assert archive.exists(), "Archive was deleted but user needs it for manual import"
+
 
 class TestRegistryAgents:
     def test_list_installed(self, runner):

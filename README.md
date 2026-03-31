@@ -1,9 +1,23 @@
-<p align="center">
-  <img src="docs/banner.png" width="600" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
-</p>
+<div align="center">
+  <table border="0" style="border-collapse: collapse; border: none;">
+    <tr style="border: none;">
+      <td style="border: none; padding-right: 20px; vertical-align: middle;">
+        <img src="docs/pet.svg" alt="Pet" width="160" style="image-rendering: pixelated;" />
+      </td>
+      <td style="border: none; vertical-align: middle; text-align: left;">
+        <div style="line-height: 1;">
+          <h1 style="margin: 0; border: none;"><b>AGENT FORGE</b></h1>
+          <a href="https://opensource.org/licenses/Apache-2.0">
+            <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" height="20">
+          </a>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
 
 <p align="center">
-  <img src="docs/line.png" alt="Separator" width="100%" height="10">
+  <img src="docs/line.svg" alt="Separator" width="100%">
 </p>
 
 

@@ -1,62 +1,35 @@
-<p align="center">
-  <img src="frontend/public/pet.svg" alt="Agent Forge Mascot" width="200" />
-</p>
+<div align="center">
+  <table border="0" style="border-collapse: collapse; border: none;">
+    <tr style="border: none;">
+      <td style="border: none; padding-right: 20px; vertical-align: middle;">
+        <img src="docs/pet.svg" alt="Pet" width="160" style="image-rendering: pixelated;" />
+      </td>
+      <td style="border: none; vertical-align: middle; text-align: left;">
+        <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: black; line-height: 0.8;">
+          <span style="font-size: 42px; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; display: block; margin-bottom: 4px;">AGENT</span>
+          <span style="font-size: 48px; letter-spacing: -1px; text-transform: uppercase; font-weight: 800; display: block;">FORGE</span>
+          <a href="https://opensource.org/licenses/Apache-2.0" style="display: block; margin-top: 20px;">
+            <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache 2.0" height="20" width="150">
+          </a>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
 
-<h1 align="center">Agent Forge</h1>
+<div align="center">
+  <div style="height: 3px; width: 100%; background: linear-gradient(90deg, #FF8C00 , #800080 , #FFFF00 , #0000FF , #FF0000 , #800080 , #0000FF); border-radius: 6px; margin: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>
+</div>
 
-<p align="center">
+
+<p align="center" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 1.1rem; color: #000000; letter-spacing: 0.5px; font-weight: 400; margin-top: 10px; font-style: italic;">
   Independent agents that can operate on any task, no matter how complex.
 </p>
 
 Agent Forge gives AI agents the ability to think through problems (forge) and interact with the real world (computer use). Each module works on its own or together with the others. Cross-platform: runs on Windows, Linux, and macOS (Work progres).
 
-## Technologies
 
-### Frontend
-
-<div align="left">
-
-|  | Technology | Version | Role |
-|:---:|:---:|:---:|:---|
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" /> | React | 19.2 | UI framework |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="25" /> | TypeScript | 5.9 | Type-safe JavaScript |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitejs/vitejs-original.svg" width="25" /> | Vite | 7.3 | Build tool and dev server |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" width="25" /> | Tailwind CSS | 4.2 | Utility-first CSS framework |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" style="filter: hue-rotate(140deg);" /> | TanStack Query | 5.90 | Data fetching and state management |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/reactrouter/reactrouter-original.svg" width="25" /> | React Router | 7.13 | Client-side routing |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitest/vitest-original.svg" width="25" /> | Vitest | 4.0 | Unit testing framework |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/eslint/eslint-original.svg" width="25" /> | ESLint | 9.39 | Code linting |
-
-</div>
-
-### Backend
-
-<div align="left">
-
-|  | Technology | Version | Role |
-|:---:|:---:|:---:|:---|
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="25" /> | FastAPI | 0.115 | Web framework |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Python | 3.12 | Runtime language |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" width="25" /> | SQLite | 3 | Relational database |
-| <img src="https://cdn.simpleicons.org/pydantic/E92063" width="28" /> | Pydantic | 2.10 | Data validation |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/socketio/socketio-original.svg" width="25" /> | WebSockets | 14.0 | Real-time communication |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytest/pytest-original.svg" width="25" /> | pytest | 8.0 | Testing framework |
-
-</div>
-
-### Desktop Automation
-
-<div align="left">
-
-|  | Technology | Version | Role |
-|:---:|:---:|:---:|:---|
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Pillow | 10.0 | Image processing |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-plain.svg" width="25" /> | mss | 9.0 | Screenshot capture |
-| <img src="https://cdn.simpleicons.org/anthropic/white" width="25" /> | MCP | 1.0 | Standardized tool interface |
-
-</div>
-
-### Paltform
+##  Paltform
 
 <div align="left">
 
@@ -244,6 +217,52 @@ Agent-Forge/
 └── paper/                 # Research paper
 ```
 
+## Technologies
+
+**Frontend**
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" /> | React | 19.2 | UI framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="25" /> | TypeScript | 5.9 | Type-safe JavaScript |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitejs/vitejs-original.svg" width="25" /> | Vite | 7.3 | Build tool and dev server |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" width="25" /> | Tailwind CSS | 4.2 | Utility-first CSS framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="25" style="filter: hue-rotate(140deg);" /> | TanStack Query | 5.90 | Data fetching and state management |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/reactrouter/reactrouter-original.svg" width="25" /> | React Router | 7.13 | Client-side routing |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitest/vitest-original.svg" width="25" /> | Vitest | 4.0 | Unit testing framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/eslint/eslint-original.svg" width="25" /> | ESLint | 9.39 | Code linting |
+
+</div>
+
+**Backend**
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="25" /> | FastAPI | 0.115 | Web framework |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Python | 3.12 | Runtime language |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" width="25" /> | SQLite | 3 | Relational database |
+| <img src="https://cdn.simpleicons.org/pydantic/E92063" width="28" /> | Pydantic | 2.10 | Data validation |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/socketio/socketio-original.svg" width="25" /> | WebSockets | 14.0 | Real-time communication |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytest/pytest-original.svg" width="25" /> | pytest | 8.0 | Testing framework |
+
+</div>
+
+**Desktop Automation**
+
+<div align="left">
+
+|  | Technology | Version | Role |
+|:---:|:---:|:---:|:---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Pillow | 10.0 | Image processing |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-plain.svg" width="25" /> | mss | 9.0 | Screenshot capture |
+| <img src="https://cdn.simpleicons.org/anthropic/white" width="25" /> | MCP | 1.0 | Standardized tool interface |
+
+</div>
+
 ## Contributing
 
 1. Create a branch from `master`:
@@ -258,3 +277,4 @@ Agent-Forge/
    ```bash
    git push -u origin feature/your-change
    ```
+

@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { PixelSun, PixelMoon } from '../ui/PixelIcon';
+import petLogo from '../../../../docs/pet.svg';
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -16,7 +17,7 @@ export function TopNav() {
     <nav className="flex items-center justify-between px-12 h-[60px] border-b border-border bg-bg-nav sticky top-0 z-50 transition-colors duration-300">
       <div className="flex items-center gap-8">
         <NavLink to="/" className="flex items-center gap-2.5 no-underline">
-          <img src="/pet.svg" width={23} height={23} alt="logo" className="pixel-bounce" />
+          <img src={petLogo} width={23} height={23} alt="logo" className="pixel-bounce" />
           <span className="font-heading font-bold text-lg text-text-primary tracking-tight">Agent Forge</span>
         </NavLink>
         <div className="flex items-center gap-1 ml-3">

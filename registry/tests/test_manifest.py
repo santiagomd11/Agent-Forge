@@ -31,11 +31,6 @@ class TestManifestValidation:
         assert m.description == ""
         assert m.steps == []
 
-    def test_v1_manifest_still_valid(self):
-        m = validate_manifest({"manifest_version": 1, "name": "legacy-agent"})
-        assert m.manifest_version == 1
-        assert m.name == "legacy-agent"
-
     def test_v2_manifest_has_api_fields(self):
         m = validate_manifest({
             "manifest_version": 2, "name": "new-agent",

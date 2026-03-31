@@ -13,13 +13,11 @@ from typing import Optional
 
 from registry.config import PACK_EXCLUDE_DIRS
 from registry.manifest import (
-    LEGACY_MANIFEST_FILENAME,
     MANIFEST_FILENAME,
     Manifest,
     StepEntry,
     validate_manifest,
 )
-from registry.security import safe_extract
 
 
 def _should_exclude(rel_path: Path) -> bool:
@@ -78,9 +76,9 @@ def _detect_name(folder: Path) -> str:
 
 
 def build_manifest(folder: Path, overrides: Optional[dict] = None) -> Manifest:
-    """Build a manifest from an agent folder, merging with any existing manifest.json."""
+    """Build a manifest from an agent folder, merging with any existing agent-forge.json."""
     existing = {}
-    manifest_path = folder / "manifest.json"
+    manifest_path = folder / MANIFEST_FILENAME
     if manifest_path.exists():
         with open(manifest_path) as f:
             existing = json.load(f)
@@ -193,9 +191,6 @@ def pack(folder: Path, output: Optional[Path] = None) -> Path:
 def unpack(agnt_path: Path, dest: Path) -> Manifest:
     """Unpack a .agnt archive to a destination directory.
 
-    Supports both the current format (agent-forge.json + agent.bundle) and
-    the legacy format (manifest.json + raw files).
-
     Args:
         agnt_path: Path to the .agnt file.
         dest: Directory to extract into (will be created).
@@ -214,38 +209,25 @@ def unpack(agnt_path: Path, dest: Path) -> Manifest:
     with zipfile.ZipFile(agnt_path, "r") as zf:
         names = zf.namelist()
 
-        if MANIFEST_FILENAME in names:
-            # Current format: agent-forge.json + agent.bundle
-            manifest_data = json.loads(zf.read(MANIFEST_FILENAME))
-            manifest = validate_manifest(manifest_data)
+        if MANIFEST_FILENAME not in names:
+            raise ValueError(f"Invalid .agnt archive: missing {MANIFEST_FILENAME}")
+        if "agent.bundle" not in names:
+            raise ValueError(f"Invalid .agnt archive: missing agent.bundle")
 
-            if "agent.bundle" not in names:
-                raise ValueError("Invalid .agnt archive: has agent-forge.json but missing agent.bundle")
+        manifest_data = json.loads(zf.read(MANIFEST_FILENAME))
+        manifest = validate_manifest(manifest_data)
 
-            dest = Path(dest)
-            with tempfile.TemporaryDirectory() as tmpdir:
-                bundle_path = Path(tmpdir) / "agent.bundle"
-                bundle_path.write_bytes(zf.read("agent.bundle"))
-                subprocess.run(
-                    ["git", "clone", str(bundle_path), str(dest)],
-                    check=True, capture_output=True,
-                )
-
-            # Write manifest into dest so list_installed / _peek_manifest can find it
-            (dest / MANIFEST_FILENAME).write_text(
-                json.dumps(manifest_data, indent=2) + "\n"
+        dest = Path(dest)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bundle_path = Path(tmpdir) / "agent.bundle"
+            bundle_path.write_bytes(zf.read("agent.bundle"))
+            subprocess.run(
+                ["git", "clone", str(bundle_path), str(dest)],
+                check=True, capture_output=True,
             )
-            return manifest
 
-        elif LEGACY_MANIFEST_FILENAME in names:
-            # Legacy format: manifest.json + raw files
-            manifest_data = json.loads(zf.read(LEGACY_MANIFEST_FILENAME))
-            manifest = validate_manifest(manifest_data)
-            dest = Path(dest)
-            safe_extract(zf, dest)
-            return manifest
-
-        else:
-            raise ValueError(
-                f"Invalid .agnt archive: missing {MANIFEST_FILENAME} or {LEGACY_MANIFEST_FILENAME}"
-            )
+        # Write manifest into dest so list_installed can find it
+        (dest / MANIFEST_FILENAME).write_text(
+            json.dumps(manifest_data, indent=2) + "\n"
+        )
+        return manifest

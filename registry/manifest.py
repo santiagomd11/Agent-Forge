@@ -12,8 +12,6 @@ MANIFEST_VERSION = 2
 
 # Manifest filename inside .agnt archives (matches API export format).
 MANIFEST_FILENAME = "agent-forge.json"
-# Legacy filename for backward compatibility with v1 archives.
-LEGACY_MANIFEST_FILENAME = "manifest.json"
 
 
 class StepEntry(BaseModel):

@@ -121,17 +121,12 @@ class RegistryHandler(BaseHTTPRequestHandler):
         """Update index.json after an upload."""
         import zipfile
 
-        from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
+        from registry.manifest import MANIFEST_FILENAME
         try:
             with zipfile.ZipFile(agnt_path, "r") as zf:
-                names = zf.namelist()
-                manifest = None
-                for fname in (MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME):
-                    if fname in names:
-                        manifest = json.loads(zf.read(fname))
-                        break
-                if manifest is None:
+                if MANIFEST_FILENAME not in zf.namelist():
                     return
+                manifest = json.loads(zf.read(MANIFEST_FILENAME))
         except Exception:
             return
 

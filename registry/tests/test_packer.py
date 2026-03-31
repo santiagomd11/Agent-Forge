@@ -97,9 +97,9 @@ class TestBuildManifest:
         assert m.computer_use is True  # step 2 has computer_use
 
     def test_existing_manifest_merged(self, sample_agent_folder):
-        manifest_path = sample_agent_folder / "manifest.json"
+        manifest_path = sample_agent_folder / MANIFEST_FILENAME
         manifest_path.write_text(json.dumps({
-            "manifest_version": 1,
+            "manifest_version": 2,
             "name": "custom-name",
             "author": "santiago",
         }))
@@ -198,12 +198,6 @@ class TestUnpack:
         assert (dest / MANIFEST_FILENAME).exists()
         assert (dest / "agentic.md").exists()
 
-    def test_unpack_legacy_format(self, legacy_agnt_file, tmp_path):
-        dest = tmp_path / "unpacked-legacy"
-        manifest = unpack(legacy_agnt_file, dest)
-        assert manifest.name == "test-agent"
-        assert (dest / "agentic.md").exists()
-
     def test_unpack_missing_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             unpack(tmp_path / "nope.agnt", tmp_path / "out")
@@ -218,7 +212,7 @@ class TestUnpack:
         agnt = tmp_path / "no-manifest.agnt"
         with zipfile.ZipFile(agnt, "w") as zf:
             zf.writestr("agentic.md", "# Test\n")
-        with pytest.raises(ValueError, match="missing"):
+        with pytest.raises(ValueError, match="missing agent-forge.json"):
             unpack(agnt, tmp_path / "out")
 
     def test_pack_then_unpack_roundtrip(self, sample_agent_folder, tmp_path):

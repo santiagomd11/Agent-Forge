@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
+from registry.manifest import MANIFEST_FILENAME
 
 
 @pytest.fixture
@@ -95,32 +95,6 @@ def sample_agnt_file(tmp_path, sample_agent_folder, sample_manifest_data):
     with zipfile.ZipFile(agnt_path, "w") as zf:
         zf.writestr(MANIFEST_FILENAME, json.dumps(sample_manifest_data, indent=2))
         zf.writestr("agent.bundle", bundle_bytes)
-    return agnt_path
-
-
-@pytest.fixture
-def legacy_agnt_file(tmp_path, sample_agent_folder):
-    """Create a legacy .agnt zip file (v1: manifest.json + raw files)."""
-    agnt_path = tmp_path / "legacy-agent-0.1.0.agnt"
-    manifest = {
-        "manifest_version": 1,
-        "name": "test-agent",
-        "version": "0.1.0",
-        "description": "A test agent",
-        "author": "tester",
-        "provider": "claude_code",
-        "computer_use": False,
-        "steps": [
-            {"name": "Gather Data", "computer_use": False},
-            {"name": "Analyze Results", "computer_use": True},
-        ],
-    }
-    with zipfile.ZipFile(agnt_path, "w") as zf:
-        zf.writestr(LEGACY_MANIFEST_FILENAME, json.dumps(manifest, indent=2))
-        for path in sample_agent_folder.rglob("*"):
-            if path.is_file():
-                rel = path.relative_to(sample_agent_folder)
-                zf.write(path, str(rel))
     return agnt_path
 
 

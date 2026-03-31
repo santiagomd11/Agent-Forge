@@ -63,22 +63,13 @@ def uninstall(name: str, agents_dir: Optional[Path] = None) -> bool:
     return False
 
 
-def _find_manifest_path(directory: Path) -> Optional[Path]:
-    """Return the path to the manifest file in a directory, or None."""
-    from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
-    for name in (MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME):
-        path = directory / name
-        if path.exists():
-            return path
-    return None
-
-
 def list_installed(agents_dir: Optional[Path] = None) -> list[dict]:
     """List all locally installed agents.
 
-    Returns a list of dicts with agent metadata from each agent-forge.json
-    (or legacy manifest.json).
+    Returns a list of dicts with agent metadata from each agent-forge.json.
     """
+    from registry.manifest import MANIFEST_FILENAME
+
     dest_root = agents_dir or get_agents_dir()
     if not dest_root.exists():
         return []
@@ -87,8 +78,8 @@ def list_installed(agents_dir: Optional[Path] = None) -> list[dict]:
     for entry in sorted(dest_root.iterdir()):
         if not entry.is_dir():
             continue
-        manifest_path = _find_manifest_path(entry)
-        if not manifest_path:
+        manifest_path = entry / MANIFEST_FILENAME
+        if not manifest_path.exists():
             continue
         try:
             with open(manifest_path) as f:
@@ -122,12 +113,10 @@ def get_installed(name: str, agents_dir: Optional[Path] = None) -> Optional[dict
 def _peek_manifest(agnt_path: Path) -> Manifest:
     """Read manifest from a .agnt archive without extracting everything."""
     import zipfile
-    from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
+    from registry.manifest import MANIFEST_FILENAME
 
     with zipfile.ZipFile(agnt_path, "r") as zf:
-        names = zf.namelist()
-        for filename in (MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME):
-            if filename in names:
-                data = json.loads(zf.read(filename))
-                return validate_manifest(data)
-        raise ValueError(f"Invalid .agnt: missing manifest in {agnt_path}")
+        if MANIFEST_FILENAME not in zf.namelist():
+            raise ValueError(f"Invalid .agnt: missing {MANIFEST_FILENAME} in {agnt_path}")
+        data = json.loads(zf.read(MANIFEST_FILENAME))
+        return validate_manifest(data)

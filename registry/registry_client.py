@@ -100,16 +100,11 @@ def push(
     # Read manifest from the .agnt
     import json
     import zipfile
-    from registry.manifest import MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME
+    from registry.manifest import MANIFEST_FILENAME
     with zipfile.ZipFile(path) as zf:
-        names = zf.namelist()
-        manifest_data = None
-        for fname in (MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME):
-            if fname in names:
-                manifest_data = json.loads(zf.read(fname))
-                break
-        if manifest_data is None:
-            raise ValueError(f"Invalid .agnt file: missing manifest")
+        if MANIFEST_FILENAME not in zf.namelist():
+            raise ValueError(f"Invalid .agnt file: missing {MANIFEST_FILENAME}")
+        manifest_data = json.loads(zf.read(MANIFEST_FILENAME))
     validate_manifest(manifest_data)
 
     adapter = _get_adapter(registry_name)

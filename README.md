@@ -1,7 +1,7 @@
 <p align="center">
   <img src="docs/pet.svg" alt="Pet" height="160" style="image-rendering: pixelated;">
-  &nbsp;&nbsp;&nbsp;
   <picture>
+  &nbsp;
     <source media="(prefers-color-scheme: dark)" srcset="docs/NameLigth.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/NameDark.svg">
     <img src="docs/NameDark.svg" alt="Agent Forge" height="160">

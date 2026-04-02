@@ -250,7 +250,7 @@ Agent-Forge/
 |:---:|:---:|:---:|:---|
 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="25" /> | Pillow | 10.0 | Image processing |
 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-plain.svg" width="25" /> | mss | 9.0 | Screenshot capture |
-| <img src="https://cdn.simpleicons.org/anthropic/white" width="25" /> | MCP | 1.0 | Standardized tool interface |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/anthropic/white"><img src="https://cdn.simpleicons.org/anthropic/black" width="25" alt="Anthropic Logo"></picture> | MCP | 1.0 | Standardized tool interface |
 
 </div>
 

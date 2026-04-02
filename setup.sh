@@ -270,15 +270,25 @@ add_to_path() {
 # ---------------------------------------------------------------------------
 
 main() {
+    OS=$(detect_os)
     echo ""
-    echo "  ___                _     ___"
-    echo " / _ | ___ ____ ___ | |_  / __/__  _______ ____"
-    echo "/ __ |/ _ \`/ -_) _ \| __// _// _ \/ __/ _ \`/ -_)"
-    echo "\/_/ |\_,_/\__, /\___|_\__\/ /_//_/\_ /\_, /\__/"
-    echo "         /___/                       /___/"
+    # Detect dark/light terminal background
+    LIGHT_MODE=0
+    if [ -n "${COLORFGBG:-}" ]; then
+        BG_VAL="${COLORFGBG##*;}"
+        [ "$BG_VAL" -gt 6 ] 2>/dev/null && LIGHT_MODE=1
+    fi
+    if [ "$LIGHT_MODE" -eq 0 ]; then
+        TC="\033[1;38;2;200;200;200m"
+    else
+        TC="\033[1;38;2;60;60;60m"
+    fi
+    R="\033[0m"
+    printf "${TC}█  █ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█${R}\n"
+    printf "${TC}█  █ █▀▀█ █  █ █ ▀█ █▀▀▄${R}\n"
+    printf "${TC}▀▀▀▀ ▀  ▀ ▀▀▀  ▀▀▀▀ ▀  ▀${R}\n"
     echo ""
 
-    OS=$(detect_os)
     info "Detected OS: $OS"
 
     install_git

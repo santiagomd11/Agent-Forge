@@ -39,6 +39,7 @@ function InstallGit {
     if (-not (CommandExists "git")) { Fail "Git installation failed." }
 }
 
+
 function PythonOk {
     $pyCmd = Get-Command python -ErrorAction SilentlyContinue
     if (-not $pyCmd) { return $false }
@@ -185,11 +186,21 @@ function AddToPath {
 
 function Main {
     Write-Host ""
-    Write-Host "  ___                _     ___"
-    Write-Host " / _ | ___ ____ ___ | |_  / __/__  _______ ____"
-    Write-Host "/ __ |/ _ ``/ -_) _ \| __// _// _ \/ __/ _ ``/ -_)"
-    Write-Host "\/_/ |\_,_/\__, /\___|_\__\/ /_//_/\_ /\_, /\__/"
-    Write-Host "         /___/                       /___/"
+    # Detect dark/light terminal background
+    $LightMode = $false
+    $bgColor = [Console]::BackgroundColor
+    if ($bgColor -eq "White" -or $bgColor -eq "Gray" -or $bgColor -eq "Yellow") {
+        $LightMode = $true
+    }
+    $R = "`e[0m"
+    if (-not $LightMode) {
+        $TC = "`e[1;38;2;200;200;200m"
+    } else {
+        $TC = "`e[1;38;2;60;60;60m"
+    }
+    Write-Host "${TC}█  █ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█${R}"
+    Write-Host "${TC}█  █ █▀▀█ █  █ █ ▀█ █▀▀▄${R}"
+    Write-Host "${TC}▀▀▀▀ ▀  ▀ ▀▀▀  ▀▀▀▀ ▀  ▀${R}"
     Write-Host ""
 
     InstallGit

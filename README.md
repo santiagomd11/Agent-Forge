@@ -1,10 +1,9 @@
 <p align="center">
   <img src="docs/pet.svg" alt="Pet" height="160" style="image-rendering: pixelated;">
   <picture>
-  &nbsp;
     <source media="(prefers-color-scheme: dark)" srcset="docs/NameLigth.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/NameDark.svg">
-    <img src="docs/NameDark.svg" alt="Agent Forge" height="160">
+    <img src="docs/NameDark.svg" alt="VADGR" height="160">
   </picture>
 </p>
 
@@ -17,7 +16,7 @@
   <i><b>Independent agents that can operate on any task, no matter how complex.</b></i>
 </p>
 
-Agent Forge gives AI agents the ability to think through problems (forge) and interact with the real world (computer use). Each module works on its own or together with the others. Cross-platform: runs on Windows, Linux, and macOS (Work progres).
+Vadgr gives AI agents the ability to think through problems (forge) and interact with the real world (computer use). Each module works on its own or together with the others. Cross-platform: runs on Windows, Linux, and macOS (Work progres).
 
 
 ##  Paltform
@@ -34,7 +33,7 @@ Agent Forge gives AI agents the ability to think through problems (forge) and in
 
 ## Install
 
-Works on **Linux**, **WSL**, and **Windows**. macOS support is in progress (agent creation and CLI steps work, computer use does not). The installer sets up everything: git, Python, Node.js, dependencies, and the `forge` CLI.
+Works on **Linux**, **WSL**, and **Windows**. macOS support is in progress (agent creation and CLI steps work, computer use does not). The installer sets up everything: git, Python, Node.js, dependencies, and the `vadgr` CLI.
 
 ```bash
 # Linux / macOS / WSL
@@ -59,64 +58,64 @@ npm install -g @google/gemini-cli                           # Gemini CLI
 Restart your terminal, then:
 
 ```bash
-forge start
+vadgr start
 ```
 
-### Forge CLI
+### Vadgr CLI
 
 **Services:**
 
 | Command | Description |
 |---------|-------------|
-| `forge start` | Start API and frontend servers |
-| `forge stop` | Stop all services |
-| `forge restart` | Restart all services |
-| `forge status` | Show if services are running |
-| `forge logs` | Tail API server logs |
-| `forge update` | Pull latest code and reinstall deps |
+| `vadgr start` | Start API and frontend servers |
+| `vadgr stop` | Stop all services |
+| `vadgr restart` | Restart all services |
+| `vadgr status` | Show if services are running |
+| `vadgr logs` | Tail API server logs |
+| `vadgr update` | Pull latest code and reinstall deps |
 
 **Agents and runs:**
 
 | Command | Description |
 |---------|-------------|
-| `forge ps` | List all agents |
-| `forge agents list` | List all agents |
-| `forge agents get <id>` | Show agent details |
-| `forge agents create --name "..." --description "..."` | Create a new agent |
-| `forge agents update <id> [--name] [--description]` | Update an agent |
-| `forge agents delete <id>` | Delete an agent |
-| `forge agents export <id> [-o file.agnt]` | Export agent as .agnt archive |
-| `forge agents import <file.agnt>` | Import agent from .agnt archive |
-| `forge run <name> [--input key=value]` | Run an agent (interactive inputs) |
-| `forge run <name> --background` | Run without streaming progress |
-| `forge runs list [--status failed]` | List runs |
-| `forge runs get <id>` | Show run details |
-| `forge runs cancel <id>` | Cancel a running run |
-| `forge runs logs <id>` | Show run logs |
+| `vadgr ps` | List all agents |
+| `vadgr agents list` | List all agents |
+| `vadgr agents get <id>` | Show agent details |
+| `vadgr agents create --name "..." --description "..."` | Create a new agent |
+| `vadgr agents update <id> [--name] [--description]` | Update an agent |
+| `vadgr agents delete <id>` | Delete an agent |
+| `vadgr agents export <id> [-o file.agnt]` | Export agent as .agnt archive |
+| `vadgr agents import <file.agnt>` | Import agent from .agnt archive |
+| `vadgr run <name> [--input key=value]` | Run an agent (interactive inputs) |
+| `vadgr run <name> --background` | Run without streaming progress |
+| `vadgr runs list [--status failed]` | List runs |
+| `vadgr runs get <id>` | Show run details |
+| `vadgr runs cancel <id>` | Cancel a running run |
+| `vadgr runs logs <id>` | Show run logs |
 
 **Info:**
 
 | Command | Description |
 |---------|-------------|
-| `forge health` | Check API health |
-| `forge providers` | List available providers and models |
-| `forge computer-use enable` | Enable desktop automation |
-| `forge computer-use disable` | Disable desktop automation |
-| `forge computer-use status` | Show computer use and daemon status |
+| `vadgr health` | Check API health |
+| `vadgr providers` | List available providers and models |
+| `vadgr computer-use enable` | Enable desktop automation |
+| `vadgr computer-use disable` | Disable desktop automation |
+| `vadgr computer-use status` | Show computer use and daemon status |
 
 **Registry** -- package manager for agent workflows:
 
 | Command | Description |
 |---------|-------------|
-| `forge registry pack <folder>` | Package agent folder into `.agnt` archive |
-| `forge registry pull <name>` | Download and install agent from registry |
-| `forge registry push <file.agnt>` | Publish `.agnt` to a registry |
-| `forge registry search <query>` | Search registries for agents |
-| `forge registry serve` | Start a self-hosted registry server |
-| `forge registry add <name> --type ...` | Add a registry to config |
-| `forge registry use <name>` | Set active registry |
-| `forge registry list` | List configured registries |
-| `forge registry remove <name>` | Remove a registry |
+| `vadgr registry pack <folder>` | Package agent folder into `.agnt` archive |
+| `vadgr registry pull <name>` | Download and install agent from registry |
+| `vadgr registry push <file.agnt>` | Publish `.agnt` to a registry |
+| `vadgr registry search <query>` | Search registries for agents |
+| `vadgr registry serve` | Start a self-hosted registry server |
+| `vadgr registry add <name> --type ...` | Add a registry to config |
+| `vadgr registry use <name>` | Set active registry |
+| `vadgr registry list` | List configured registries |
+| `vadgr registry remove <name>` | Remove a registry |
 
 ### Manual setup
 
@@ -172,7 +171,7 @@ Academic paper documenting the framework.
 ## Structure
 
 ```
-Agent-Forge/
+Vadgr/
 ├── cli/                   # Unified command-line interface
 │   ├── main.py            # Root Click group
 │   ├── http.py            # HTTP client for API

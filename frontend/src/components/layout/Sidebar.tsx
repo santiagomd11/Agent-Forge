@@ -18,7 +18,7 @@ export function TopNav() {
       <div className="flex items-center gap-8">
         <NavLink to="/" className="flex items-center gap-2.5 no-underline">
           <img src={petLogo} width={23} height={23} alt="logo" className="pixel-bounce" />
-          <span className="font-heading font-bold text-lg text-text-primary tracking-tight">Agent Forge</span>
+          <span className="font-heading font-bold text-lg text-text-primary tracking-tight">Vadgr</span>
         </NavLink>
         <div className="flex items-center gap-1 ml-3">
           {navItems.map(({ to, label }) => (

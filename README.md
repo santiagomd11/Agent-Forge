@@ -127,14 +127,14 @@ Provider parser families and real sample log lines are documented in [PROVIDER_P
 
 ```mermaid
 graph LR
-    User((User)) -->|":3000"| FE[Frontend<br/>React + Vite]
-    FE -->|"REST /api"| API[API Server<br/>FastAPI]
-    FE <-->|"WebSocket /ws"| API
-    API -->|subprocess| CLI[CLI Agent Tool<br/>claude / codex / aider]
+    User((User)) -->|Port 3000| FE[Frontend<br/>React + Vite]
+    FE -->|REST /api| API[API Server<br/>FastAPI]
+    FE <-->|WebSocket /ws| API
+    API -->|subprocess| CLI[CLI Agent Tool<br/>Claude / Codex / Aider]
     API -->|read/write| DB[(SQLite)]
-    CLI -->|reads| Forge[forge/<br/>Prompt Templates]
+    CLI -->|reads| Vadgr[vadgr/<br/>Prompt Templates]
     CLI -->|writes| Output[output/<br/>Generated Agents]
-    API -.->|"if computer_use"| CU[Computer Use<br/>Desktop Automation]
+    API -.->|if computer_use| CU[Computer Use<br/>Desktop Automation]
     CU -->|controls| Desktop[Host OS<br/>Mouse, Keyboard, Screen]
 ```
 

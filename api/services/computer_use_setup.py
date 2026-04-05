@@ -32,9 +32,11 @@ DEPS_MARKER = ".deps_installed"
 MCP_SERVER_NAME = "vadgr-computer-use"
 
 # Regex to strip the MCP section from TOML (Codex config).
+# Matches both the old name (computer-use) and new name (vadgr-computer-use)
+# so that upgrading users get old entries cleaned up.
 import re
 _CODEX_MCP_SECTION_RE = re.compile(
-    r'\n?\[mcp_servers\.vadgr-computer-use(?:\.env)?\]\n(?:(?!\n\[)[^\n]*\n?)*',
+    r'\n?\[mcp_servers\.(?:vadgr-)?computer-use(?:\.env)?\]\n(?:(?!\n\[)[^\n]*\n?)*',
 )
 
 

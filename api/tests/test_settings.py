@@ -51,7 +51,7 @@ class TestComputerUseSetupService:
             result = cu_setup.enable_computer_use(cache_enabled=True)
             assert mcp_path.exists()
             data = json.loads(mcp_path.read_text())
-            assert "computer-use" in data["mcpServers"]
+            assert "vadgr-computer-use" in data["mcpServers"]
             assert result["enabled"] is True
 
     def test_enable_with_cache_disabled(self, tmp_path):
@@ -66,7 +66,7 @@ class TestComputerUseSetupService:
         ):
             cu_setup.enable_computer_use(cache_enabled=False)
             data = json.loads(mcp_path.read_text())
-            env = data["mcpServers"]["computer-use"]["env"]
+            env = data["mcpServers"]["vadgr-computer-use"]["env"]
             assert env["AGENT_FORGE_CACHE_ENABLED"] == "0"
 
     def test_enable_skips_pip_when_deps_marker_fresh(self, tmp_path):
@@ -155,7 +155,7 @@ class TestComputerUseSetupService:
     def test_disable_removes_mcp_json(self, tmp_path):
         """Disabling computer use removes .mcp.json."""
         mcp_path = tmp_path / ".mcp.json"
-        mcp_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         with patch.object(cu_setup, "MCP_JSON_PATH", mcp_path):
             result = cu_setup.disable_computer_use()
             assert not mcp_path.exists()
@@ -164,21 +164,21 @@ class TestComputerUseSetupService:
     def test_update_cache_setting(self, tmp_path):
         """Toggling cache updates env var in .mcp.json."""
         mcp_path = tmp_path / ".mcp.json"
-        mcp_path.write_text('{"mcpServers": {"computer-use": {"env": {}}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {"env": {}}}}')
         with (
             patch.object(cu_setup, "MCP_JSON_PATH", mcp_path),
             patch.object(cu_setup, "PROJECT_ROOT", tmp_path),
         ):
             cu_setup.update_cache_setting(cache_enabled=False)
             data = json.loads(mcp_path.read_text())
-            assert data["mcpServers"]["computer-use"]["env"]["AGENT_FORGE_CACHE_ENABLED"] == "0"
+            assert data["mcpServers"]["vadgr-computer-use"]["env"]["AGENT_FORGE_CACHE_ENABLED"] == "0"
 
     def test_get_status_reads_cache_disabled(self, tmp_path):
         """get_status reads cache_enabled=False from .mcp.json env."""
         mcp_path = tmp_path / ".mcp.json"
         mcp_path.write_text(json.dumps({
             "mcpServers": {
-                "computer-use": {
+                "vadgr-computer-use": {
                     "env": {"AGENT_FORGE_CACHE_ENABLED": "0"}
                 }
             }
@@ -345,8 +345,8 @@ class TestMultiProviderMcpConfig:
             gemini_path = tmp_path / ".gemini" / "settings.json"
             assert gemini_path.exists()
             data = json.loads(gemini_path.read_text())
-            assert "computer-use" in data["mcpServers"]
-            server = data["mcpServers"]["computer-use"]
+            assert "vadgr-computer-use" in data["mcpServers"]
+            server = data["mcpServers"]["vadgr-computer-use"]
             assert "python" in server["command"]  # full venv path contains 'python'
             assert "-m" in server["args"]
             assert "computer_use.mcp_server" in server["args"]
@@ -365,7 +365,7 @@ class TestMultiProviderMcpConfig:
             codex_path = tmp_path / ".codex" / "config.toml"
             assert codex_path.exists()
             content = codex_path.read_text()
-            assert "[mcp_servers.computer-use]" in content
+            assert "[mcp_servers.vadgr-computer-use]" in content
             assert "computer_use.mcp_server" in content
 
     def test_gemini_settings_has_correct_structure(self, tmp_path):
@@ -375,11 +375,11 @@ class TestMultiProviderMcpConfig:
             gemini_data = json.loads((tmp_path / ".gemini" / "settings.json").read_text())
             mcp_data = json.loads((tmp_path / ".mcp.json").read_text())
             # Both should have the same server definition under mcpServers
-            assert "computer-use" in gemini_data["mcpServers"]
-            assert "computer-use" in mcp_data["mcpServers"]
+            assert "vadgr-computer-use" in gemini_data["mcpServers"]
+            assert "vadgr-computer-use" in mcp_data["mcpServers"]
             # Same command and args
-            assert gemini_data["mcpServers"]["computer-use"]["command"] == mcp_data["mcpServers"]["computer-use"]["command"]
-            assert gemini_data["mcpServers"]["computer-use"]["args"] == mcp_data["mcpServers"]["computer-use"]["args"]
+            assert gemini_data["mcpServers"]["vadgr-computer-use"]["command"] == mcp_data["mcpServers"]["vadgr-computer-use"]["command"]
+            assert gemini_data["mcpServers"]["vadgr-computer-use"]["args"] == mcp_data["mcpServers"]["vadgr-computer-use"]["args"]
 
     def test_codex_config_has_correct_toml_structure(self, tmp_path):
         """Codex config.toml has proper TOML format with command and args."""
@@ -387,7 +387,7 @@ class TestMultiProviderMcpConfig:
             cu_setup.enable_computer_use()
             content = (tmp_path / ".codex" / "config.toml").read_text()
             # Should have the server table
-            assert "[mcp_servers.computer-use]" in content
+            assert "[mcp_servers.vadgr-computer-use]" in content
             # Should have command with venv python path
             assert "command = '" in content
             assert "python" in content
@@ -413,9 +413,9 @@ class TestMultiProviderMcpConfig:
         gemini_path = tmp_path / ".gemini" / "settings.json"
         codex_path = tmp_path / ".codex" / "config.toml"
         # Create all three
-        mcp_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         gemini_path.parent.mkdir(parents=True)
-        gemini_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        gemini_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         codex_path.parent.mkdir(parents=True)
         codex_path.write_text('[mcp_servers.computer-use]\ncommand = "python"\n')
         with (
@@ -436,7 +436,7 @@ class TestMultiProviderMcpConfig:
         gemini_path = tmp_path / ".gemini" / "settings.json"
         codex_path = tmp_path / ".codex" / "config.toml"
         # Create .mcp.json so update_cache_setting proceeds
-        mcp_path.write_text('{"mcpServers": {"computer-use": {"env": {}}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {"env": {}}}}')
         with (
             patch.object(cu_setup, "MCP_JSON_PATH", mcp_path),
             patch.object(cu_setup, "GEMINI_SETTINGS_PATH", gemini_path),
@@ -450,7 +450,7 @@ class TestMultiProviderMcpConfig:
             assert codex_path.exists()
             # .mcp.json should have cache disabled
             mcp_data = json.loads(mcp_path.read_text())
-            assert mcp_data["mcpServers"]["computer-use"]["env"]["AGENT_FORGE_CACHE_ENABLED"] == "0"
+            assert mcp_data["mcpServers"]["vadgr-computer-use"]["env"]["AGENT_FORGE_CACHE_ENABLED"] == "0"
 
     def test_codex_cache_disabled_in_env(self, tmp_path):
         """When cache is disabled, Codex config includes the env var."""
@@ -468,11 +468,11 @@ class TestMultiProviderMcpConfig:
 
             # .mcp.json
             mcp_data = json.loads((tmp_path / ".mcp.json").read_text())
-            assert mcp_data["mcpServers"]["computer-use"]["command"] == expected_python
+            assert mcp_data["mcpServers"]["vadgr-computer-use"]["command"] == expected_python
 
             # .gemini/settings.json
             gemini_data = json.loads((tmp_path / ".gemini" / "settings.json").read_text())
-            assert gemini_data["mcpServers"]["computer-use"]["command"] == expected_python
+            assert gemini_data["mcpServers"]["vadgr-computer-use"]["command"] == expected_python
 
             # .codex/config.toml
             codex_content = (tmp_path / ".codex" / "config.toml").read_text()
@@ -485,7 +485,7 @@ class TestMultiProviderMcpConfig:
         with self._patch_all(tmp_path):
             cu_setup.enable_computer_use()
             mcp_data = json.loads((tmp_path / ".mcp.json").read_text())
-            command = mcp_data["mcpServers"]["computer-use"]["command"]
+            command = mcp_data["mcpServers"]["vadgr-computer-use"]["command"]
             # Should contain bin/python, not Scripts/python
             assert "bin" in command.replace("\\", "/")
             assert "Scripts" not in command
@@ -497,13 +497,13 @@ class TestMultiProviderMcpConfig:
         with self._patch_all(tmp_path):
             cu_setup.enable_computer_use()
             mcp_data = json.loads((tmp_path / ".mcp.json").read_text())
-            command = mcp_data["mcpServers"]["computer-use"]["command"]
+            command = mcp_data["mcpServers"]["vadgr-computer-use"]["command"]
             assert "Scripts" in command
 
     def test_disable_tolerates_missing_gemini_and_codex(self, tmp_path):
         """Disable works even if only .mcp.json exists (Gemini/Codex never written)."""
         mcp_path = tmp_path / ".mcp.json"
-        mcp_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         with (
             patch.object(cu_setup, "MCP_JSON_PATH", mcp_path),
             patch.object(cu_setup, "GEMINI_SETTINGS_PATH", tmp_path / ".gemini" / "settings.json"),
@@ -537,7 +537,7 @@ class TestCodexGlobalConfig:
             assert global_codex.exists()
             assert not project_codex.exists()
             content = global_codex.read_text()
-            assert "[mcp_servers.computer-use]" in content
+            assert "[mcp_servers.vadgr-computer-use]" in content
 
     def test_enable_preserves_existing_global_codex_settings(self, tmp_path):
         """Writing MCP config must not clobber existing Codex settings (model, trust)."""
@@ -562,7 +562,7 @@ class TestCodexGlobalConfig:
             cu_setup.enable_computer_use()
             content = global_codex.read_text()
             # MCP section added
-            assert "[mcp_servers.computer-use]" in content
+            assert "[mcp_servers.vadgr-computer-use]" in content
             # Existing settings preserved
             assert 'model = "o3"' in content
             assert 'trust_level = "trusted"' in content
@@ -592,7 +592,7 @@ class TestCodexGlobalConfig:
         ):
             cu_setup.enable_computer_use()
             content = global_codex.read_text()
-            assert content.count("[mcp_servers.computer-use]") == 1
+            assert content.count("[mcp_servers.vadgr-computer-use]") == 1
             assert "/old/python" not in content
             assert "old_module" not in content
             assert "computer_use.mcp_server" in content
@@ -705,7 +705,7 @@ class TestCodexGlobalConfig:
             cu_setup.enable_computer_use()
             content = global_codex.read_text()
             assert "[mcp_servers.my-other-tool]" in content
-            assert "[mcp_servers.computer-use]" in content
+            assert "[mcp_servers.vadgr-computer-use]" in content
 
 
 class TestComputerUseSettingsEndpoints:
@@ -741,7 +741,7 @@ class TestComputerUseSettingsEndpoints:
     async def test_put_disable_computer_use(self, client, tmp_path):
         """PUT with enabled=false removes .mcp.json."""
         mcp_path = tmp_path / ".mcp.json"
-        mcp_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         with patch.object(cu_setup, "MCP_JSON_PATH", mcp_path):
             resp = await client.put("/api/settings/computer-use", json={
                 "enabled": False,
@@ -776,7 +776,7 @@ class TestRunBlockedWhenComputerUseDisabled:
             forge_path="output/test/",
         )
         mcp_path = tmp_path / ".mcp.json"
-        mcp_path.write_text('{"mcpServers": {"computer-use": {}}}')
+        mcp_path.write_text('{"mcpServers": {"vadgr-computer-use": {}}}')
         with patch.object(cu_setup, "MCP_JSON_PATH", mcp_path):
             resp = await client.post(f"/api/agents/{agent['id']}/run", json={})
             assert resp.status_code == 202

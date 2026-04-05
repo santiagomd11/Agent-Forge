@@ -74,7 +74,7 @@ class TestGetStatusIncludesDaemon:
         # Write a valid .mcp.json so computer use is enabled
         mcp_path = tmp_path / ".mcp.json"
         mcp_path.write_text(json.dumps({
-            "mcpServers": {"computer-use": {"command": "python", "env": {}}}
+            "mcpServers": {"vadgr-computer-use": {"command": "python", "env": {}}}
         }))
         with patch("api.services.computer_use_setup.MCP_JSON_PATH", mcp_path), \
              patch("api.services.computer_use_setup._probe_daemon", return_value="running"), \

@@ -9,6 +9,16 @@ import api.services.computer_use_setup as cu_setup
 from api.utils.platform import venv_bin_dir
 
 
+@pytest.fixture(autouse=True)
+def _no_wsl2_daemon(monkeypatch):
+    """Prevent enable_computer_use() from probing the real Windows daemon on WSL2.
+
+    Without this, any test that calls enable_computer_use() will hang on
+    WSL2 because _probe_daemon() opens a TCP connection to port 19542.
+    """
+    monkeypatch.setattr(cu_setup, "_is_wsl2", lambda: False)
+
+
 def _create_fake_pip(venv_path: Path) -> None:
     """Create a fake pip binary in the correct platform-specific location."""
     bin_dir = venv_bin_dir(venv_path)

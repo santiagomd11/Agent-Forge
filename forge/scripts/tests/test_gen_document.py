@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import pytest
-from docx import Document as DocxDocument
+DocxDocument = pytest.importorskip("docx", reason="python-docx not installed").Document
 
 from forge.scripts.src.gen_document import (
     Heading,

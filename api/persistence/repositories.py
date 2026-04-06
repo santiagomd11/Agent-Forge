@@ -76,7 +76,7 @@ def _row_to_edge(row) -> dict:
 
 
 def _row_to_run(row) -> dict:
-    return {
+    d = {
         "id": row["id"],
         "project_id": row["project_id"],
         "agent_id": row["agent_id"],
@@ -89,6 +89,12 @@ def _row_to_run(row) -> dict:
         "started_at": row["started_at"],
         "completed_at": row["completed_at"],
     }
+    # agent_name comes from LEFT JOIN -- only present in joined queries
+    try:
+        d["agent_name"] = row["agent_name"]
+    except (IndexError, KeyError):
+        pass
+    return d
 
 
 class AgentRepository:
@@ -360,7 +366,10 @@ class RunRepository:
 
     async def get(self, run_id: str) -> Optional[dict]:
         cursor = await self.db.conn.execute(
-            "SELECT * FROM runs WHERE id = ?", (run_id,)
+            "SELECT r.*, a.name AS agent_name FROM runs r"
+            " LEFT JOIN agents a ON r.agent_id = a.id"
+            " WHERE r.id = ?",
+            (run_id,),
         )
         row = await cursor.fetchone()
         return _row_to_run(row) if row else None
@@ -393,26 +402,35 @@ class RunRepository:
 
     async def list_by_agent(self, agent_id: str) -> list[dict]:
         cursor = await self.db.conn.execute(
-            "SELECT * FROM runs WHERE agent_id = ? ORDER BY started_at DESC", (agent_id,)
+            "SELECT r.*, a.name AS agent_name FROM runs r"
+            " LEFT JOIN agents a ON r.agent_id = a.id"
+            " WHERE r.agent_id = ? ORDER BY r.started_at DESC",
+            (agent_id,),
         )
         return [_row_to_run(row) for row in await cursor.fetchall()]
 
     async def list_by_project(self, project_id: str) -> list[dict]:
         cursor = await self.db.conn.execute(
-            "SELECT * FROM runs WHERE project_id = ? ORDER BY started_at DESC",
+            "SELECT r.*, a.name AS agent_name FROM runs r"
+            " LEFT JOIN agents a ON r.agent_id = a.id"
+            " WHERE r.project_id = ? ORDER BY r.started_at DESC",
             (project_id,),
         )
         return [_row_to_run(row) for row in await cursor.fetchall()]
 
     async def list_all(self, status: str | None = None) -> list[dict]:
+        base = (
+            "SELECT r.*, a.name AS agent_name FROM runs r"
+            " LEFT JOIN agents a ON r.agent_id = a.id"
+        )
         if status:
             cursor = await self.db.conn.execute(
-                "SELECT * FROM runs WHERE status = ? ORDER BY started_at DESC",
+                f"{base} WHERE r.status = ? ORDER BY r.started_at DESC",
                 (status,),
             )
         else:
             cursor = await self.db.conn.execute(
-                "SELECT * FROM runs ORDER BY started_at DESC"
+                f"{base} ORDER BY r.started_at DESC"
             )
         return [_row_to_run(row) for row in await cursor.fetchall()]
 

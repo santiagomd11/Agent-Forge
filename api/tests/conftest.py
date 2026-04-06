@@ -81,10 +81,24 @@ async def app(db):
         "input_schema": [],
         "output_schema": [],
     })
-    application.state.agent_service = AgentService(
+    agent_service = AgentService(
         agent_repo=application.state.agent_repo,
         provider=provider,
     )
+    # Stub out run_forge and run_update so background tasks created by
+    # POST/PUT /api/agents don't perform real disk I/O (git init, venv
+    # creation, etc.).  Without this, 50+ background tasks pile up and
+    # the event loop never drains, causing the suite to hang.
+    _original_run_forge = agent_service.run_forge
+
+    async def _fast_run_forge(agent_id: str) -> None:
+        agent = await agent_service.agent_repo.get(agent_id)
+        if agent:
+            await agent_service.agent_repo.update(agent_id, status="ready")
+
+    agent_service.run_forge = _fast_run_forge
+    agent_service.run_update = AsyncMock()
+    application.state.agent_service = agent_service
     cu_service = ComputerUseService()
     executor = AgentExecutor(provider=provider, computer_use_service=cu_service)
 

@@ -4,7 +4,8 @@ import os
 import tempfile
 
 import pytest
-from openpyxl import load_workbook
+openpyxl = pytest.importorskip("openpyxl", reason="openpyxl not installed")
+load_workbook = openpyxl.load_workbook
 
 from forge.scripts.src.gen_xlsx import (
     generate_xlsx,

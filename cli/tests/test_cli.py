@@ -388,38 +388,56 @@ class TestRunsLogs:
 # Registry (config commands only -- pack/pull/push tested in registry/)
 # -----------------------------------------------------------------------
 
+def _run_with_forge_home(forge_home: str, *args: str, timeout: int = 30) -> subprocess.CompletedProcess:
+    """Run CLI command with an isolated FORGE_HOME so registry tests don't pollute the real config."""
+    cmd = [PYTHON, "-m", "cli", "--api-url", f"http://127.0.0.1:{FAKE_PORT}"] + list(args)
+    env = {**os.environ, "PYTHONPATH": PROJECT_ROOT, "FORGE_HOME": forge_home}
+    return subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=PROJECT_ROOT, timeout=timeout)
+
+
 class TestRegistryConfig:
+    @pytest.fixture(autouse=True)
+    def _isolated_forge_home(self, tmp_path):
+        """Each test gets its own FORGE_HOME so registry config is isolated."""
+        self._forge_home = str(tmp_path / ".forge")
+
+    def _reg_run(self, *args, **kwargs):
+        return _run_with_forge_home(self._forge_home, *args, **kwargs)
+
     def test_list(self):
-        r = _run("registry", "list")
+        r = self._reg_run("registry", "list")
         assert r.returncode == 0
-        assert "sample" in r.stdout
+        # Default config always includes 'official'
+        assert "official" in r.stdout
 
     def test_add_and_remove(self):
-        r = _run("registry", "add", "temp-test", "--type", "http", "--url", "https://fake.test")
+        r = self._reg_run("registry", "add", "temp-test", "--type", "http", "--url", "https://fake.test")
         assert r.returncode == 0
         assert "Added" in r.stdout
 
-        r = _run("registry", "list")
+        r = self._reg_run("registry", "list")
         assert "temp-test" in r.stdout
 
-        # Switch to it and back so we can remove
-        _run("registry", "use", "temp-test")
-        _run("registry", "use", "sample")
+        # Switch to temp-test and back so we can remove it
+        self._reg_run("registry", "use", "temp-test")
+        self._reg_run("registry", "use", "official")
 
-        r = _run("registry", "remove", "temp-test")
+        r = self._reg_run("registry", "remove", "temp-test")
         assert r.returncode == 0
         assert "Removed" in r.stdout
 
     def test_add_duplicate_fails(self):
-        r = _run("registry", "add", "sample", "--type", "http", "--url", "https://x")
+        # 'official' is always present in the default config
+        r = self._reg_run("registry", "add", "official", "--type", "http", "--url", "https://x")
         assert r.returncode != 0
 
     def test_use_nonexistent_fails(self):
-        r = _run("registry", "use", "nonexistent-xyz")
+        r = self._reg_run("registry", "use", "nonexistent-xyz")
         assert r.returncode != 0
 
     def test_remove_active_fails(self):
-        r = _run("registry", "remove", "sample")
+        # 'official' is the default active registry
+        r = self._reg_run("registry", "remove", "official")
         assert r.returncode != 0
 
 

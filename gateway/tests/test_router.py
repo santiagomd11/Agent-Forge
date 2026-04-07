@@ -186,3 +186,42 @@ class TestSessionIsolation:
         # User B should get idle state, not User A's flow
         result = await router.handle(_msg("status", sender_id="222"))
         assert "idle" in result.response.lower() or "no runs" in result.response.lower()
+
+
+class TestInputSanitization:
+    """Router must strip dangerous chars from user inputs before triggering runs."""
+
+    @pytest.mark.asyncio
+    async def test_collect_input_strips_shell_chars(self):
+        """Shell injection in required inputs must be stripped before reaching run_agent."""
+        api = _mock_api()
+        router = MessageRouter(api)
+        await router.handle(_msg("run QA Engineer"))
+        await router.handle(_msg("/home/repo; rm -rf /"))
+        assert api.run_agent.called
+        inputs = api.run_agent.call_args[0][1]
+        assert ";" not in inputs.get("repo_path", "")
+
+    @pytest.mark.asyncio
+    async def test_confirm_key_value_strips_shell_chars(self):
+        """Shell injection in key=value optional inputs must be stripped before reaching run_agent."""
+        api = _mock_api()
+        router = MessageRouter(api)
+        await router.handle(_msg("run Software Engineer"))
+        await router.handle(_msg("Fix the bug"))
+        await router.handle(_msg("repo_path=/home/repo; ls -la"))
+        assert api.run_agent.called
+        inputs = api.run_agent.call_args[0][1]
+        assert ";" not in inputs.get("repo_path", "")
+
+    @pytest.mark.asyncio
+    async def test_confirm_bare_optional_strips_shell_chars(self):
+        """Shell injection in bare optional inputs must be stripped before reaching run_agent."""
+        api = _mock_api()
+        router = MessageRouter(api)
+        await router.handle(_msg("run Software Engineer"))
+        await router.handle(_msg("Fix the bug"))
+        await router.handle(_msg("/home/repo | cat /etc/passwd"))
+        assert api.run_agent.called
+        inputs = api.run_agent.call_args[0][1]
+        assert "|" not in inputs.get("repo_path", "")

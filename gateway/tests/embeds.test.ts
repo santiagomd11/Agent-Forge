@@ -16,26 +16,35 @@ import {
 describe("embeds", () => {
   describe("progressBar", () => {
     it("shows empty bar for 0 progress", () => {
-      expect(progressBar(0, 5)).toMatch(/^[\u25AB]+$/);
+      const bar = progressBar(0, 5);
+      expect(bar).toContain("\u25B1"); // empty triangular
+      expect(bar).not.toContain("\u25B0"); // no filled
     });
 
     it("shows full bar for complete", () => {
-      expect(progressBar(5, 5)).toMatch(/^[\u25AA]+$/);
+      const bar = progressBar(5, 5);
+      expect(bar).toContain("\u25B0"); // filled triangular
+      expect(bar).not.toContain("\u25B1"); // no empty
     });
 
-    it("shows partial bar", () => {
+    it("shows partial bar with percentage", () => {
       const bar = progressBar(3, 6);
-      expect(bar).toContain("\u25AA");
-      expect(bar).toContain("\u25AB");
-      expect(bar).toHaveLength(10);
+      expect(bar).toContain("\u25B0");
+      expect(bar).toContain("\u25B1");
+      expect(bar).toContain("50%");
     });
 
     it("handles zero total", () => {
-      expect(progressBar(0, 0)).toMatch(/^[\u25AB]+$/);
+      const bar = progressBar(0, 0);
+      expect(bar).toContain("\u25B1");
     });
 
-    it("supports custom length", () => {
-      expect(progressBar(5, 5, 20)).toHaveLength(20);
+    it("shows 100% when complete", () => {
+      expect(progressBar(5, 5)).toContain("100%");
+    });
+
+    it("shows 0% when not started", () => {
+      expect(progressBar(0, 5)).toContain("0%");
     });
   });
 
@@ -132,7 +141,7 @@ describe("embeds", () => {
 
     it("includes progress bar", () => {
       const embed = runStartedEmbed("security", "abcdef12");
-      expect(embed.toJSON().description).toContain("\u25AB");
+      expect(embed.toJSON().description).toContain("\u25B1");
     });
   });
 
@@ -142,7 +151,7 @@ describe("embeds", () => {
       const json = embed.toJSON();
       expect(json.description).toContain("3/5");
       expect(json.description).toContain("Scanning deps");
-      expect(json.description).toContain("\u25AA");
+      expect(json.description).toContain("\u25B0");
       expect(json.color).toBe(0xeab308);
     });
   });
@@ -169,7 +178,7 @@ describe("embeds", () => {
 
     it("includes full progress bar", () => {
       const embed = runCompletedEmbed("security", "abc123", {});
-      expect(embed.toJSON().description).toContain("\u25AA");
+      expect(embed.toJSON().description).toContain("\u25B0");
     });
   });
 

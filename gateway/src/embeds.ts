@@ -250,9 +250,10 @@ export function errorEmbed(title: string, message: string): EmbedBuilder {
     .setDescription(message);
 }
 
-/** Unicode progress bar using small squares. */
-export function progressBar(current: number, total: number, length = 10): string {
-  if (total <= 0) return "\u25AB".repeat(length);
-  const filled = Math.round((current / total) * length);
-  return "\u25AA".repeat(filled) + "\u25AB".repeat(length - filled);
+/** Unicode progress bar with percentage. Uses triangular chars for a bar look. */
+export function progressBar(current: number, total: number, length = 12): string {
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  const filled = total > 0 ? Math.round((current / total) * length) : 0;
+  const bar = "\u25B0".repeat(filled) + "\u25B1".repeat(length - filled);
+  return `${bar} ${pct}%`;
 }

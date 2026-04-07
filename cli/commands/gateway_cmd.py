@@ -34,17 +34,34 @@ def start_gateway(port, config):
 
     PID_DIR.mkdir(parents=True, exist_ok=True)
 
+    gateway_dir = FORGE_REPO / "gateway"
+    if not (gateway_dir / "package.json").exists():
+        print_warning("Gateway module not found. Expected gateway/package.json")
+        raise SystemExit(1)
+
     env = {**os.environ}
     if port:
-        env["GATEWAY_WEBHOOK_PORT"] = str(port)
+        env["AGENT_FORGE_PORT"] = str(port)
     if config:
         env["GATEWAY_CONFIG"] = config
 
+    # Read API port from pid file (written by `vadgr start`)
+    api_port_file = PID_DIR / "api.port"
+    if api_port_file.exists():
+        env.setdefault("AGENT_FORGE_PORT", api_port_file.read_text().strip())
+
     print_info("Starting gateway...")
     log_file = open(FORGE_HOME / "gateway.log", "w")
+
+    # Check if built dist exists, prefer node over npx tsx for production
+    if (gateway_dir / "dist" / "index.js").exists():
+        cmd = ["node", "dist/index.js"]
+    else:
+        cmd = ["npx", "tsx", "src/index.ts"]
+
     proc = subprocess.Popen(
-        ["python", "-m", "gateway"],
-        cwd=str(FORGE_REPO),
+        cmd,
+        cwd=str(gateway_dir),
         env=env,
         stdout=log_file,
         stderr=subprocess.STDOUT,
@@ -52,14 +69,13 @@ def start_gateway(port, config):
     )
     _write_pid("gateway", proc.pid)
 
-    time.sleep(2)
+    time.sleep(3)
     if proc.poll() is not None:
         print_warning(f"Gateway failed to start. Check {FORGE_HOME / 'gateway.log'}")
         raise SystemExit(1)
 
-    actual_port = port or 8585
-    print_success(f"Gateway running on port {actual_port}")
-    print_info(f"Webhook URL: http://0.0.0.0:{actual_port}/webhook/whatsapp")
+    print_success("Gateway running (Discord adapter)")
+    print_info("Bot will respond to @mentions and DMs")
 
 
 @gateway_group.command("stop")

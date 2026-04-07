@@ -28,5 +28,18 @@ export interface CommandResult {
   response: string;
   runId?: string;
   agentName?: string;
+  machineName?: string;
   isAsync: boolean;
+}
+
+/** Transport-agnostic agent API. Implemented by VadgrAPIClient (single-machine)
+ *  and MultiMachineAPI (multi-machine via WebSocket). */
+export interface AgentAPI {
+  listAgents(): Promise<Record<string, unknown>[]>;
+  runAgent(agentId: string, inputs: Record<string, string>): Promise<Record<string, unknown>>;
+  listRuns(): Promise<Record<string, unknown>[]>;
+  getRun(runId: string): Promise<Record<string, unknown>>;
+  cancelRun(runId: string): Promise<Record<string, unknown>>;
+  resumeRun(runId: string): Promise<Record<string, unknown>>;
+  getRunLogs(runId: string): Promise<Record<string, unknown>[]>;
 }

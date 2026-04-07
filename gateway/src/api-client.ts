@@ -1,11 +1,13 @@
 /** HTTP client for the Vadgr API. */
 
+import type { AgentAPI } from "./models.js";
+
 const DEFAULT_TIMEOUT = 30_000;
 const MAX_RETRIES = 3;
 const RETRY_BACKOFF_BASE = 1000;
 const ID_PATTERN = /^[a-zA-Z0-9-]+$/;
 
-export class VadgrAPIClient {
+export class VadgrAPIClient implements AgentAPI {
   private baseUrl: string;
 
   constructor(baseUrl = "http://localhost:8000") {

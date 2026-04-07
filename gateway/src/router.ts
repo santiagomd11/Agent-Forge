@@ -1,7 +1,6 @@
 /** Conversational command router -- maps natural language to agent runs. */
 
-import type { InboundMessage, CommandResult } from "./models.js";
-import type { VadgrAPIClient } from "./api-client.js";
+import type { InboundMessage, CommandResult, AgentAPI } from "./models.js";
 
 enum State {
   IDLE = "idle",
@@ -18,11 +17,11 @@ interface Session {
 }
 
 export class MessageRouter {
-  private api: VadgrAPIClient;
+  private api: AgentAPI;
   private sanitize: (v: string) => string;
   private sessions = new Map<string, Session>();
 
-  constructor(api: VadgrAPIClient, sanitize: (v: string) => string = (v) => v) {
+  constructor(api: AgentAPI, sanitize: (v: string) => string = (v) => v) {
     this.api = api;
     this.sanitize = sanitize;
   }

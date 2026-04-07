@@ -1,4 +1,4 @@
-/** Security layer: allowlist, rate limiting, sanitization, audit. */
+/** Security layer: allowlist, sanitization, audit. */
 
 import * as fs from "fs";
 import * as path from "path";
@@ -6,33 +6,24 @@ import type { InboundMessage } from "./models.js";
 
 const DANGEROUS_CHARS = /[;&|`$(){}<>\\]/g;
 const MAX_MESSAGE_LENGTH = 2000;
-const DEFAULT_RATE_LIMIT = 10;
-const DEFAULT_RATE_WINDOW = 3600;
 
 export const SILENT_REJECT = Symbol("SILENT_REJECT");
 
 export interface SecurityConfig {
   allowedSenders: string[];
-  rateLimit: number;
-  rateWindow: number;
   auditLogPath?: string;
 }
 
 export function defaultSecurityConfig(): SecurityConfig {
   return {
     allowedSenders: [],
-    rateLimit: DEFAULT_RATE_LIMIT,
-    rateWindow: DEFAULT_RATE_WINDOW,
   };
 }
 
 type CheckResult = null | typeof SILENT_REJECT | string;
 
-const MAX_RATE_BUCKETS = 10_000;
-
 export class SecurityGuard {
   private config: SecurityConfig;
-  private rateBuckets = new Map<string, number[]>();
 
   constructor(config: SecurityConfig) {
     this.config = config;
@@ -52,12 +43,7 @@ export class SecurityGuard {
       }
     }
 
-    // 2. Rate limiting
-    if (this.isRateLimited(message.senderId)) {
-      return "Slow down! Too many commands. Try again in a few minutes.";
-    }
-
-    // 3. Message length
+    // 2. Message length
     if (message.text.length > MAX_MESSAGE_LENGTH) {
       return `Message too long (max ${MAX_MESSAGE_LENGTH} chars).`;
     }
@@ -67,34 +53,6 @@ export class SecurityGuard {
 
   sanitizeInput(value: string): string {
     return value.replace(DANGEROUS_CHARS, "").trim();
-  }
-
-  private isRateLimited(senderId: string): boolean {
-    const now = Date.now() / 1000;
-    const window = this.config.rateWindow;
-    const limit = this.config.rateLimit;
-
-    let bucket = this.rateBuckets.get(senderId);
-    if (!bucket) {
-      bucket = [];
-      this.rateBuckets.set(senderId, bucket);
-    }
-
-    // Prune old entries
-    const cutoff = now - window;
-    while (bucket.length > 0 && (bucket[0] ?? 0) < cutoff) bucket.shift();
-
-    if (bucket.length >= limit) return true;
-    bucket.push(now);
-
-    // Evict stale senders to prevent memory leak
-    if (this.rateBuckets.size > MAX_RATE_BUCKETS) {
-      for (const [key, b] of this.rateBuckets) {
-        if (b.length === 0) this.rateBuckets.delete(key);
-      }
-    }
-
-    return false;
   }
 
   private audit(message: InboundMessage): void {

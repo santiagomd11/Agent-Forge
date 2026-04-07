@@ -61,10 +61,10 @@ describe("Gateway processMessage logic", () => {
   }
 
   it("applies security check before routing", async () => {
-    mockSecurity.check.mockReturnValue("Rate limited");
+    mockSecurity.check.mockReturnValue("Message too long (max 2000 chars).");
     await processMessage(msg("hey"));
     expect(mockRouter.handle).not.toHaveBeenCalled();
-    expect(sentMessages[0]?.text).toBe("Rate limited");
+    expect(sentMessages[0]?.text).toBe("Message too long (max 2000 chars).");
   });
 
   it("silently rejects on SILENT_REJECT", async () => {

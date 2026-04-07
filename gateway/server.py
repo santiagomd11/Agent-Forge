@@ -31,8 +31,8 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
 
     # Wire up components
     api_client = VadgrAPIClient(config.api_url)
-    router = MessageRouter(api_client)
     security = SecurityGuard(config.security)
+    router = MessageRouter(api_client, sanitize=security.sanitize_input)
 
     # WhatsApp adapter
     wa_adapter = WhatsAppAdapter(

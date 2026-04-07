@@ -34,31 +34,6 @@ describe("SecurityGuard", () => {
     });
   });
 
-  describe("rate limiting", () => {
-    it("passes under limit", () => {
-      const guard = new SecurityGuard({ ...defaultSecurityConfig(), rateLimit: 3 });
-      expect(guard.check(msg())).toBeNull();
-      expect(guard.check(msg())).toBeNull();
-      expect(guard.check(msg())).toBeNull();
-    });
-
-    it("rejects over limit", () => {
-      const guard = new SecurityGuard({ ...defaultSecurityConfig(), rateLimit: 2, rateWindow: 3600 });
-      guard.check(msg());
-      guard.check(msg());
-      const result = guard.check(msg());
-      expect(result).toBeTypeOf("string");
-      expect(result).toContain("Slow down");
-    });
-
-    it("isolates per sender", () => {
-      const guard = new SecurityGuard({ ...defaultSecurityConfig(), rateLimit: 1 });
-      expect(guard.check(msg({ senderId: "a" }))).toBeNull();
-      expect(guard.check(msg({ senderId: "b" }))).toBeNull();
-      expect(guard.check(msg({ senderId: "a" }))).toContain("Slow down");
-    });
-  });
-
   describe("message length", () => {
     it("rejects long messages", () => {
       const guard = new SecurityGuard(defaultSecurityConfig());

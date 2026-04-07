@@ -20,6 +20,20 @@ import {
   errorEmbed,
 } from "./embeds.js";
 
+/** Safely extract a string from any error type (Error, string, JSON object). */
+function safeErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err == null) return "Unknown error";
+  try { return JSON.stringify(err); } catch { return "Unknown error"; }
+}
+
+/** Safely extract displayable text from a log entry. */
+function formatLogEntry(entry: any): string {
+  const raw = entry?.message ?? entry?.data ?? entry?.summary ?? "";
+  return typeof raw === "string" ? raw.slice(0, 100) : JSON.stringify(raw).slice(0, 100);
+}
+
 export interface GatewayConfig {
   apiUrl: string;
   discord?: DiscordConfig | undefined;
@@ -166,8 +180,8 @@ export class Gateway {
           try {
             await this.api.cancelRun(runId.trim());
             return { text: `Cancelled run ${runId}.` };
-          } catch (e: any) {
-            return { embed: errorEmbed("Cancel failed", e.message) };
+          } catch (e: unknown) {
+            return { embed: errorEmbed("Cancel failed", safeErrorMessage(e)) };
           }
         }
         case "logs": {
@@ -175,17 +189,17 @@ export class Gateway {
           try {
             const logs = await this.api.getRunLogs(runId.trim());
             if (!logs.length) return { text: "No logs yet." };
-            const lines = logs.slice(-5).map((e: any) => `${(e.message || e.data || "").slice(0, 100)}`);
+            const lines = logs.slice(-5).map((entry: any) => formatLogEntry(entry));
             return { text: "```\n" + lines.join("\n") + "\n```" };
-          } catch (e: any) {
-            return { embed: errorEmbed("Logs failed", e.message) };
+          } catch (e: unknown) {
+            return { embed: errorEmbed("Logs failed", safeErrorMessage(e)) };
           }
         }
         default:
           return { embed: helpEmbed() };
       }
-    } catch (err: any) {
-      return { embed: errorEmbed("Error", err.message) };
+    } catch (err: unknown) {
+      return { embed: errorEmbed("Error", safeErrorMessage(err)) };
     }
   }
 

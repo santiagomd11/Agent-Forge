@@ -169,3 +169,68 @@ describe("watchRun polling logic", () => {
     expect(calls).toBe(3);
   });
 });
+
+describe("error message safety", () => {
+  /** Ensure error messages are always strings, never objects.
+   *  The API can throw errors with structured JSON messages. */
+  function safeErrorMessage(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "string") return err;
+    if (err == null) return "Unknown error";
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return "Unknown error";
+    }
+  }
+
+  it("handles Error objects", () => {
+    expect(safeErrorMessage(new Error("timeout"))).toBe("timeout");
+  });
+
+  it("handles string errors", () => {
+    expect(safeErrorMessage("connection refused")).toBe("connection refused");
+  });
+
+  it("handles object errors (API JSON responses)", () => {
+    const apiError = { error: { code: "RUN_NOT_FOUND", message: "Run not found" } };
+    const result = safeErrorMessage(apiError);
+    expect(typeof result).toBe("string");
+    expect(result).toContain("RUN_NOT_FOUND");
+  });
+
+  it("handles null/undefined", () => {
+    expect(safeErrorMessage(null)).toBe("Unknown error");
+    expect(safeErrorMessage(undefined)).toBe("Unknown error");
+  });
+});
+
+describe("log entry formatting safety", () => {
+  /** Safely extract a display string from a log entry. */
+  function formatLogEntry(entry: any): string {
+    const raw = entry?.message ?? entry?.data ?? entry?.summary ?? "";
+    return typeof raw === "string" ? raw.slice(0, 100) : JSON.stringify(raw).slice(0, 100);
+  }
+
+  it("handles string message field", () => {
+    expect(formatLogEntry({ message: "Step 1 done" })).toBe("Step 1 done");
+  });
+
+  it("handles object message field", () => {
+    const result = formatLogEntry({ message: { step: 1, status: "done" } });
+    expect(typeof result).toBe("string");
+    expect(result).toContain("step");
+  });
+
+  it("handles missing fields", () => {
+    expect(formatLogEntry({})).toBe("");
+  });
+
+  it("handles null entry", () => {
+    expect(formatLogEntry(null)).toBe("");
+  });
+
+  it("truncates long messages", () => {
+    expect(formatLogEntry({ message: "x".repeat(200) })).toHaveLength(100);
+  });
+});

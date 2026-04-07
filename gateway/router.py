@@ -10,11 +10,17 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from gateway.models import InboundMessage, CommandResult
+from gateway.security import _DANGEROUS_CHARS
 
 logger = logging.getLogger(__name__)
+
+
+def _default_sanitize(value: str) -> str:
+    """Strip shell-sensitive characters from agent input values."""
+    return _DANGEROUS_CHARS.sub("", value).strip()
 
 
 class ConversationState(Enum):
@@ -43,8 +49,9 @@ class MessageRouter:
     The router talks to the Vadgr API to discover agents and trigger runs.
     """
 
-    def __init__(self, api_client):
+    def __init__(self, api_client, sanitize: Callable[[str], str] | None = None):
         self._api = api_client
+        self._sanitize = sanitize if sanitize is not None else _default_sanitize
         self._sessions: dict[str, Session] = {}
 
     def _get_session(self, sender_id: str) -> Session:
@@ -263,7 +270,7 @@ class MessageRouter:
     async def _collect_input(self, session: Session, text: str) -> CommandResult:
         """User is providing a value for a pending input."""
         if session.pending_input:
-            session.collected_inputs[session.pending_input] = text.strip()
+            session.collected_inputs[session.pending_input] = self._sanitize(text.strip())
             session.pending_input = None
         return await self._ask_for_inputs(session)
 
@@ -286,12 +293,12 @@ class MessageRouter:
 
         if "=" in text:
             key, _, value = text.partition("=")
-            session.collected_inputs[key.strip()] = value.strip()
+            session.collected_inputs[key.strip()] = self._sanitize(value.strip())
             return await self._ask_for_inputs(session)
 
         # Assume it's the value for the first uncollected optional
         if optional:
-            session.collected_inputs[optional[0]["name"]] = text.strip()
+            session.collected_inputs[optional[0]["name"]] = self._sanitize(text.strip())
             return await self._ask_for_inputs(session)
 
         return await self._start_run(session)

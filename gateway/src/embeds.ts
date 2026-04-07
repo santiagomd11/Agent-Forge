@@ -6,9 +6,11 @@ const COLORS = {
   success: 0x22c55e,
   running: 0xeab308,
   error: 0xef4444,
-  info: 0x3b82f6,
-  neutral: 0x6b7280,
+  info: 0x5865f2,   // Discord blurple
+  neutral: 0x2b2d31, // Discord dark
 } as const;
+
+const BOT_NAME = "Vadgr";
 
 export function greetingEmbed(
   userName: string,
@@ -17,27 +19,36 @@ export function greetingEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setColor(COLORS.info)
+    .setAuthor({ name: BOT_NAME })
     .setTitle(`Hey ${userName}!`);
 
+  const lines: string[] = [];
+
   if (machines.length > 0) {
-    const machineLines = machines.map(
-      (m) => `\u{1F7E2} **${m.name}** -- ${m.agentCount} agent${m.agentCount === 1 ? "" : "s"}`,
-    );
-    embed.addFields({ name: "Machines", value: machineLines.join("\n"), inline: false });
+    lines.push("**Machines**");
+    for (const m of machines) {
+      lines.push(`> \u{1F7E2} **${m.name}** \u2014 ${m.agentCount} agent${m.agentCount === 1 ? "" : "s"}`);
+    }
+    lines.push("");
   }
 
   if (agents.length > 0) {
-    const agentLines = agents.map((a, i) => {
-      const machine = a.machineName ? ` *(${a.machineName})*` : "";
-      const steps = a.steps?.length ? ` -- ${a.steps.length} steps` : "";
-      return `**${i + 1}.** ${a.name}${steps}${machine}`;
-    });
-    embed.addFields({ name: "Agents", value: agentLines.join("\n"), inline: false });
+    lines.push("**Agents**");
+    for (let i = 0; i < agents.length; i++) {
+      const a = agents[i]!;
+      const steps = a.steps?.length ? `${a.steps.length} steps` : "";
+      const machine = a.machineName ? `\u2022 ${a.machineName}` : "";
+      const desc = a.description ? ` \u2014 ${a.description.slice(0, 60)}` : "";
+      const meta = [steps, machine].filter(Boolean).join(" \u2022 ");
+      lines.push(`> **${i + 1}.** \`${a.name}\`${desc}`);
+      if (meta) lines.push(`>     ${meta}`);
+    }
   } else {
-    embed.setDescription("No agents registered yet.");
+    lines.push("No agents registered yet. Create one with `vadgr agents create`.");
   }
 
-  embed.setFooter({ text: "/run \u00B7 /status \u00B7 /agents \u00B7 /machines" });
+  embed.setDescription(lines.join("\n"));
+  embed.setFooter({ text: "/run \u00B7 /agents \u00B7 /status \u00B7 /machines" });
   return embed;
 }
 
@@ -46,6 +57,7 @@ export function agentListEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setColor(COLORS.info)
+    .setAuthor({ name: BOT_NAME })
     .setTitle("Agents");
 
   if (agents.length === 0) {
@@ -53,22 +65,37 @@ export function agentListEmbed(
     return embed;
   }
 
-  for (const agent of agents.slice(0, 25)) {
-    const desc = agent.description?.slice(0, 100) || "No description";
-    const machine = agent.machineName ? ` (${agent.machineName})` : "";
-    const steps = agent.steps?.length ? ` -- ${agent.steps.length} steps` : "";
-    embed.addFields({ name: `${agent.name}${machine}`, value: `${desc}${steps}`, inline: false });
+  const lines: string[] = [];
+  for (const a of agents.slice(0, 20)) {
+    const desc = a.description?.slice(0, 80) || "*No description*";
+    const steps = a.steps?.length ? `${a.steps.length} steps` : "";
+    const machine = a.machineName ? a.machineName : "";
+    const meta = [steps, machine].filter(Boolean).join(" \u2022 ");
+    lines.push(`**${a.name}**`);
+    lines.push(`> ${desc}`);
+    if (meta) lines.push(`> ${meta}`);
   }
 
+  if (agents.length > 20) {
+    lines.push(`\n*...and ${agents.length - 20} more*`);
+  }
+
+  embed.setDescription(lines.join("\n"));
   return embed;
 }
 
 export function runStartedEmbed(agentName: string, runId: string, machineName?: string): EmbedBuilder {
-  const machine = machineName ? `on **${machineName}**` : "";
+  const lines: string[] = [];
+  if (machineName) lines.push(`on **${machineName}**`);
+  lines.push(`Run \`${runId.slice(0, 8)}\``);
+  lines.push("");
+  lines.push(progressBar(0, 1) + " Starting...");
+
   return new EmbedBuilder()
     .setColor(COLORS.running)
-    .setTitle(`Starting ${agentName}`)
-    .setDescription(`${machine}\nRun ID: \`${runId.slice(0, 8)}\`\n${progressBar(0, 1)}`)
+    .setAuthor({ name: BOT_NAME })
+    .setTitle(`\u{1F680} ${agentName}`)
+    .setDescription(lines.join("\n"))
     .setTimestamp();
 }
 
@@ -80,13 +107,17 @@ export function progressEmbed(
   stepName: string,
   machineName?: string,
 ): EmbedBuilder {
-  const machine = machineName ? `on **${machineName}**` : "";
+  const lines: string[] = [];
+  if (machineName) lines.push(`on **${machineName}**`);
+  lines.push(`Run \`${runId.slice(0, 8)}\``);
+  lines.push("");
+  lines.push(`${progressBar(stepIndex, stepTotal)} **${stepIndex}/${stepTotal}** ${stepName}`);
+
   return new EmbedBuilder()
     .setColor(COLORS.running)
-    .setTitle(`Running ${agentName}`)
-    .setDescription(
-      `${machine}\nRun ID: \`${runId.slice(0, 8)}\`\n${progressBar(stepIndex, stepTotal)} ${stepIndex}/${stepTotal} ${stepName}`,
-    )
+    .setAuthor({ name: BOT_NAME })
+    .setTitle(`\u{1F504} ${agentName}`)
+    .setDescription(lines.join("\n"))
     .setTimestamp();
 }
 
@@ -96,11 +127,17 @@ export function runCompletedEmbed(
   outputs: Record<string, unknown>,
   machineName?: string,
 ): EmbedBuilder {
-  const machine = machineName ? `on **${machineName}**` : "";
+  const lines: string[] = [];
+  if (machineName) lines.push(`on **${machineName}**`);
+  lines.push(`Run \`${runId.slice(0, 8)}\``);
+  lines.push("");
+  lines.push(progressBar(1, 1) + " **Complete**");
+
   const embed = new EmbedBuilder()
     .setColor(COLORS.success)
-    .setTitle(`${agentName} finished!`)
-    .setDescription(`${machine}\nRun ID: \`${runId.slice(0, 8)}\``)
+    .setAuthor({ name: BOT_NAME })
+    .setTitle(`\u{2705} ${agentName} finished!`)
+    .setDescription(lines.join("\n"))
     .setTimestamp();
 
   for (const [key, val] of Object.entries(outputs)) {
@@ -118,19 +155,26 @@ export function runFailedEmbed(
   error: string,
   machineName?: string,
 ): EmbedBuilder {
-  const machine = machineName ? `on **${machineName}**` : "";
+  const lines: string[] = [];
+  if (machineName) lines.push(`on **${machineName}**`);
+  lines.push(`Run \`${runId.slice(0, 8)}\``);
+  lines.push("");
+  lines.push(`**Error:** ${error.slice(0, 400)}`);
+  lines.push("");
+  lines.push(`resume with \`/cancel run_id:${runId.slice(0, 8)}\``);
+
   return new EmbedBuilder()
     .setColor(COLORS.error)
-    .setTitle(`${agentName} failed`)
-    .setDescription(
-      `${machine}\nRun ID: \`${runId.slice(0, 8)}\`\n\n**Error:** ${error.slice(0, 500)}\n\nResume: \`/resume run_id:${runId.slice(0, 8)}\``,
-    )
+    .setAuthor({ name: BOT_NAME })
+    .setTitle(`\u{274C} ${agentName} failed`)
+    .setDescription(lines.join("\n"))
     .setTimestamp();
 }
 
 export function statusEmbed(runs: Record<string, unknown>[]): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setColor(COLORS.info)
+    .setAuthor({ name: BOT_NAME })
     .setTitle("Recent Runs");
 
   if (runs.length === 0) {
@@ -141,8 +185,8 @@ export function statusEmbed(runs: Record<string, unknown>[]): EmbedBuilder {
   const lines = runs.slice(0, 15).map((r: any) => {
     const id = (r.id || "").slice(0, 8);
     const icon = r.status === "completed" ? "\u{2705}" : r.status === "failed" ? "\u{274C}" : "\u{1F7E1}";
-    const machine = r.machine_name ? ` (${r.machine_name})` : "";
-    return `${icon} \`${id}\` **${r.agent_name || "-"}**${machine} -- ${r.status || "?"}`;
+    const machine = r.machine_name ? ` \u2022 ${r.machine_name}` : "";
+    return `${icon} \`${id}\` **${r.agent_name || "-"}** \u2014 ${r.status || "?"}${machine}`;
   });
 
   embed.setDescription(lines.join("\n"));
@@ -154,38 +198,49 @@ export function machinesEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setColor(COLORS.info)
+    .setAuthor({ name: BOT_NAME })
     .setTitle("Connected Machines");
 
   if (machines.length === 0) {
-    embed.setDescription("No machines connected. Run `vadgr gateway connect` on your machines.");
+    embed.setDescription("No machines connected.\nRun `vadgr gateway connect` on your machines to register them.");
     return embed;
   }
 
+  const lines: string[] = [];
   for (const m of machines) {
     const uptime = Math.floor((Date.now() - m.connectedAt.getTime()) / 60_000);
-    embed.addFields({
-      name: `\u{1F7E2} ${m.name}`,
-      value: `${m.agentCount} agents | ${m.activeRuns} active runs | up ${uptime}m`,
-      inline: false,
-    });
+    lines.push(`\u{1F7E2} **${m.name}**`);
+    lines.push(`> ${m.agentCount} agents \u2022 ${m.activeRuns} active runs \u2022 up ${uptime}m`);
   }
 
+  embed.setDescription(lines.join("\n"));
   return embed;
 }
 
 export function helpEmbed(): EmbedBuilder {
+  const lines = [
+    "**Slash Commands**",
+    "> `/run <agent>` \u2014 Run an agent",
+    "> `/agents` \u2014 List all agents",
+    "> `/status` \u2014 Show recent runs",
+    "> `/cancel <id>` \u2014 Cancel a run",
+    "> `/logs <id>` \u2014 Show run logs",
+    "> `/machines` \u2014 Show connected machines",
+    "",
+    "**Text Commands**",
+    "> `hey` \u2014 Greeting + agent list",
+    "> `run <agent>` \u2014 Start an agent",
+    "> `status` \u2014 Show runs",
+    "> `help` \u2014 This message",
+    "",
+    "Or just describe what you want and I'll figure it out.",
+  ];
+
   return new EmbedBuilder()
     .setColor(COLORS.neutral)
-    .setTitle("Vadgr Commands")
-    .addFields(
-      { name: "/run <agent>", value: "Run an agent", inline: true },
-      { name: "/agents", value: "List all agents", inline: true },
-      { name: "/status", value: "Show recent runs", inline: true },
-      { name: "/cancel <id>", value: "Cancel a run", inline: true },
-      { name: "/logs <id>", value: "Show run logs", inline: true },
-      { name: "/machines", value: "Show connected machines", inline: true },
-    )
-    .setFooter({ text: "Or just say hey and describe what you want." });
+    .setAuthor({ name: BOT_NAME })
+    .setTitle("Commands")
+    .setDescription(lines.join("\n"));
 }
 
 export function errorEmbed(title: string, message: string): EmbedBuilder {
@@ -195,9 +250,9 @@ export function errorEmbed(title: string, message: string): EmbedBuilder {
     .setDescription(message);
 }
 
-/** Unicode progress bar. */
+/** Unicode progress bar using small squares. */
 export function progressBar(current: number, total: number, length = 10): string {
-  if (total <= 0) return "\u2591".repeat(length);
+  if (total <= 0) return "\u25AB".repeat(length);
   const filled = Math.round((current / total) * length);
-  return "\u2588".repeat(filled) + "\u2591".repeat(length - filled);
+  return "\u25AA".repeat(filled) + "\u25AB".repeat(length - filled);
 }

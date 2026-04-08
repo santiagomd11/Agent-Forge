@@ -334,7 +334,7 @@ export class Gateway {
         });
       } else {
         // Single-machine: poll the local API with live progress updates
-        this.watchRun(result.runId, result.agentName || "Agent", message.chatId, adapter, sentMessageId);
+        this.watchRun(result.runId, result.agentName || "Agent", message.chatId, adapter, sentMessageId, result.stepTotal || 0);
       }
     }
   }
@@ -345,6 +345,7 @@ export class Gateway {
     chatId: string,
     adapter: ChannelAdapter,
     progressMessageId?: string,
+    stepTotal: number = 0,
   ): Promise<void> {
     const POLL_INTERVAL = 10_000;  // 10s for more responsive progress
     const MAX_POLLS = 360;         // 1 hour at 10s intervals
@@ -383,13 +384,13 @@ export class Gateway {
         try {
           const logs = await this.api.getRunLogs(runId);
           for (const log of logs) {
-            const data = (log as any).data || {};
+            const entry = log as any;
+            const data = entry.data || {};
             const stepNum = data.step_num;
-            const stepTotal = data.step_total || 0;
-            if (stepNum && stepNum > lastStepSeen) {
+            // Use step_completed events for reliable step tracking
+            if (stepNum && stepNum > lastStepSeen && (entry.type === "step_completed" || entry.type === "agent_log")) {
               lastStepSeen = stepNum;
               const stepName = data.step_name || `Step ${stepNum}`;
-              // Edit the progress message with updated step info
               if (editMsgId) {
                 await adapter.sendMessage({
                   chatId,

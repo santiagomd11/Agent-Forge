@@ -279,6 +279,7 @@ export class MessageRouter {
         responseType: "run_started",
         runId,
         agentName: agent.name,
+        stepTotal: (agent.steps || []).length,
         isAsync: true,
       };
     } catch (e: any) {

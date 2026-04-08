@@ -40,6 +40,7 @@ export interface CommandResult {
   runId?: string;
   agentName?: string;
   machineName?: string;
+  stepTotal?: number;
   isAsync: boolean;
 }
 

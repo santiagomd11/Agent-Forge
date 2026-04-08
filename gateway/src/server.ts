@@ -16,6 +16,7 @@ import {
   statusEmbed,
   machinesEmbed,
   helpEmbed,
+  logsEmbed,
   runCompletedEmbed,
   runFailedEmbed,
   errorEmbed,
@@ -123,6 +124,16 @@ export class Gateway {
     console.log("[Gateway] Stopped");
   }
 
+  /** Resolve a short run ID prefix to a full UUID. */
+  private async resolveRunId(prefix: string): Promise<string> {
+    const trimmed = prefix.trim();
+    if (trimmed.length >= 32) return trimmed;
+    const runs = await this.api.listRuns();
+    const match = runs.find((r: any) => (r.id || "").startsWith(trimmed));
+    if (!match) throw new Error(`No run found matching '${trimmed}'`);
+    return (match as any).id;
+  }
+
   /** Build an embed for a text command response based on responseType. */
   private buildResponseEmbed(result: any, senderName: string): any | undefined {
     const data = result.responseData || {};
@@ -189,7 +200,7 @@ export class Gateway {
             }));
             return { embed: machinesEmbed(machines) };
           }
-          return { text: "Multi-machine mode not enabled. Run on a single machine." };
+          return { embed: errorEmbed("Single Machine", "Multi-machine mode not enabled. Running on a single machine.") };
         }
         case "run": {
           const agentQuery = options["agent"] || "";
@@ -220,21 +231,22 @@ export class Gateway {
           return { text: result.response };
         }
         case "cancel": {
-          const runId = options["run_id"] || "";
+          const runIdInput = options["run_id"] || "";
           try {
-            await this.api.cancelRun(runId.trim());
-            return { text: `Cancelled run ${runId}.` };
+            const fullId = await this.resolveRunId(runIdInput.trim());
+            await this.api.cancelRun(fullId);
+            return { embed: errorEmbed("Cancelled", `Run ${fullId.slice(0, 8)} has been cancelled.`) };
           } catch (e: unknown) {
             return { embed: errorEmbed("Cancel failed", safeErrorMessage(e)) };
           }
         }
         case "logs": {
-          const runId = options["run_id"] || "";
+          const runIdInput = options["run_id"] || "";
           try {
-            const logs = await this.api.getRunLogs(runId.trim());
-            if (!logs.length) return { text: "No logs yet." };
+            const fullId = await this.resolveRunId(runIdInput.trim());
+            const logs = await this.api.getRunLogs(fullId);
             const lines = logs.slice(-5).map((entry: any) => formatLogEntry(entry));
-            return { text: "```\n" + lines.join("\n") + "\n```" };
+            return { embed: logsEmbed(fullId, lines) };
           } catch (e: unknown) {
             return { embed: errorEmbed("Logs failed", safeErrorMessage(e)) };
           }

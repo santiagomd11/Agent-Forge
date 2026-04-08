@@ -243,6 +243,16 @@ export function helpEmbed(): EmbedBuilder {
     .setDescription(lines.join("\n"));
 }
 
+export function logsEmbed(runId: string, entries: string[]): EmbedBuilder {
+  const id = runId.slice(0, 8);
+  const body = entries.length ? "```\n" + entries.join("\n") + "\n```" : "No logs yet.";
+  return new EmbedBuilder()
+    .setColor(COLORS.info)
+    .setAuthor({ name: BOT_NAME })
+    .setTitle(`Logs -- ${id}`)
+    .setDescription(body);
+}
+
 export function errorEmbed(title: string, message: string): EmbedBuilder {
   return new EmbedBuilder()
     .setColor(COLORS.error)

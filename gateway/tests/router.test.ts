@@ -145,19 +145,25 @@ describe("MessageRouter", () => {
 
   describe("global commands", () => {
     it("cancels a run", async () => {
-      const router = new MessageRouter(mockApi() as any);
+      const api = mockApi();
+      api.listRuns.mockResolvedValue([{ id: "abc123-full-uuid", agent_name: "test", status: "running" }]);
+      const router = new MessageRouter(api as any);
       const result = await router.handle(msg("cancel abc123"));
       expect(result.response.toLowerCase()).toContain("cancel");
     });
 
     it("resumes a run", async () => {
-      const router = new MessageRouter(mockApi() as any);
+      const api = mockApi();
+      api.listRuns.mockResolvedValue([{ id: "abc123-full-uuid", agent_name: "test", status: "failed" }]);
+      const router = new MessageRouter(api as any);
       const result = await router.handle(msg("resume abc123"));
       expect(result.response.toLowerCase()).toContain("resum");
     });
 
     it("shows logs", async () => {
-      const router = new MessageRouter(mockApi() as any);
+      const api = mockApi();
+      api.listRuns.mockResolvedValue([{ id: "abc123-full-uuid", agent_name: "test", status: "completed" }]);
+      const router = new MessageRouter(api as any);
       const result = await router.handle(msg("logs abc123"));
       expect(result.response).toContain("Step 1");
     });

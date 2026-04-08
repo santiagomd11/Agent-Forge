@@ -117,32 +117,46 @@ export class MessageRouter {
     };
   }
 
+  /** Resolve a short run ID prefix to a full UUID by searching recent runs. */
+  private async resolveRunId(prefix: string): Promise<string> {
+    const trimmed = prefix.trim();
+    // Already a full UUID
+    if (trimmed.length >= 32) return trimmed;
+    const runs = await this.api.listRuns();
+    const match = runs.find((r: any) => (r.id || "").startsWith(trimmed));
+    if (!match) throw new Error(`No run found matching '${trimmed}'`);
+    return (match as any).id;
+  }
+
   private async cancel(runId: string): Promise<CommandResult> {
     try {
-      await this.api.cancelRun(runId.trim());
-      return { response: `Cancelled run ${runId}.`, isAsync: false };
+      const fullId = await this.resolveRunId(runId);
+      await this.api.cancelRun(fullId);
+      return { response: `Cancelled run ${fullId.slice(0, 8)}.`, responseType: "plain", isAsync: false };
     } catch (e: any) {
-      return { response: `Failed to cancel: ${e.message}`, isAsync: false };
+      return { response: `Failed to cancel: ${e.message}`, responseType: "error", isAsync: false };
     }
   }
 
   private async resume(runId: string): Promise<CommandResult> {
     try {
-      const result: any = await this.api.resumeRun(runId.trim());
-      return { response: result.message || "Resuming...", runId: runId.trim(), isAsync: true };
+      const fullId = await this.resolveRunId(runId);
+      const result: any = await this.api.resumeRun(fullId);
+      return { response: result.message || "Resuming...", runId: fullId, isAsync: true };
     } catch (e: any) {
-      return { response: `Failed to resume: ${e.message}`, isAsync: false };
+      return { response: `Failed to resume: ${e.message}`, responseType: "error", isAsync: false };
     }
   }
 
   private async logs(runId: string): Promise<CommandResult> {
     try {
-      const logs = await this.api.getRunLogs(runId.trim());
-      if (!logs.length) return { response: "No logs yet.", isAsync: false };
+      const fullId = await this.resolveRunId(runId);
+      const logs = await this.api.getRunLogs(fullId);
+      if (!logs.length) return { response: "No logs yet.", responseType: "plain", isAsync: false };
       const lines = logs.slice(-5).map((e: any) => `  ${(e.message || e.data || "").slice(0, 100)}`);
-      return { response: "Recent logs:\n" + lines.join("\n"), isAsync: false };
+      return { response: "Recent logs:\n" + lines.join("\n"), responseType: "plain", isAsync: false };
     } catch (e: any) {
-      return { response: `Failed to get logs: ${e.message}`, isAsync: false };
+      return { response: `Failed to get logs: ${e.message}`, responseType: "error", isAsync: false };
     }
   }
 

@@ -12,6 +12,7 @@ import {
   greetingEmbed,
   agentListEmbed,
   runStartedEmbed,
+  progressEmbed,
   statusEmbed,
   machinesEmbed,
   helpEmbed,
@@ -314,10 +315,11 @@ export class Gateway {
 
     // Respond with embed when possible, plain text as fallback
     const embed = this.buildResponseEmbed(result, message.senderName);
+    let sentMessageId: string | undefined;
     if (embed) {
-      await adapter.sendMessage({ chatId: message.chatId, text: result.response, embed });
+      sentMessageId = await adapter.sendMessage({ chatId: message.chatId, text: result.response, embed });
     } else {
-      await adapter.sendMessage({ chatId: message.chatId, text: result.response });
+      sentMessageId = await adapter.sendMessage({ chatId: message.chatId, text: result.response });
     }
 
     // Watch async runs
@@ -331,43 +333,81 @@ export class Gateway {
           machineName: result.machineName,
         });
       } else {
-        // Single-machine: poll the local API
-        this.watchRun(result.runId, result.agentName || "Agent", message.chatId, adapter);
+        // Single-machine: poll the local API with live progress updates
+        this.watchRun(result.runId, result.agentName || "Agent", message.chatId, adapter, sentMessageId);
       }
     }
   }
 
-  private async watchRun(runId: string, agentName: string, chatId: string, adapter: ChannelAdapter): Promise<void> {
-    const POLL_INTERVAL = 30_000;
-    const MAX_POLLS = 120;
+  private async watchRun(
+    runId: string,
+    agentName: string,
+    chatId: string,
+    adapter: ChannelAdapter,
+    progressMessageId?: string,
+  ): Promise<void> {
+    const POLL_INTERVAL = 10_000;  // 10s for more responsive progress
+    const MAX_POLLS = 360;         // 1 hour at 10s intervals
+    let lastStepSeen = 0;
+    let editMsgId = progressMessageId;
 
     for (let i = 0; i < MAX_POLLS; i++) {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       try {
         const run: any = await this.api.getRun(runId);
+
         if (run.status === "completed") {
           const outputs = run.outputs || {};
+          // Edit the progress message to show completion, or send new if no tracked message
           await adapter.sendMessage({
             chatId,
             text: `${agentName} finished!`,
             embed: runCompletedEmbed(agentName, runId, outputs),
+            editMessageId: editMsgId,
           });
           return;
         }
+
         if (run.status === "failed") {
           const error = typeof run.outputs === "object" ? run.outputs?.error || "Unknown error" : String(run.outputs);
           await adapter.sendMessage({
             chatId,
             text: `${agentName} failed.`,
             embed: runFailedEmbed(agentName, runId, String(error)),
+            editMessageId: editMsgId,
           });
           return;
+        }
+
+        // Poll logs for step-level progress
+        try {
+          const logs = await this.api.getRunLogs(runId);
+          for (const log of logs) {
+            const data = (log as any).data || {};
+            const stepNum = data.step_num;
+            const stepTotal = data.step_total || 0;
+            if (stepNum && stepNum > lastStepSeen) {
+              lastStepSeen = stepNum;
+              const stepName = data.step_name || `Step ${stepNum}`;
+              // Edit the progress message with updated step info
+              if (editMsgId) {
+                await adapter.sendMessage({
+                  chatId,
+                  text: `${agentName}: ${stepNum}/${stepTotal} ${stepName}`,
+                  embed: progressEmbed(agentName, runId, stepNum, stepTotal, stepName),
+                  editMessageId: editMsgId,
+                });
+              }
+            }
+          }
+        } catch {
+          // Logs endpoint may not be available, continue polling run status
         }
       } catch {
         // API might be temporarily unreachable, keep polling
       }
     }
 
-    await adapter.sendMessage({ chatId, text: `Run ${runId.slice(0, 8)} still going after 1 hour. Check with: status` });
+    await adapter.sendMessage({ chatId, text: `Run ${runId.slice(0, 8)} still going after 1 hour. Check with: /status` });
   }
 }

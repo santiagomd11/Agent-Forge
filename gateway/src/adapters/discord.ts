@@ -85,26 +85,46 @@ export class DiscordAdapter implements ChannelAdapter {
     await this.client.destroy();
   }
 
-  async sendMessage(message: OutboundMessage): Promise<void> {
+  async sendMessage(message: OutboundMessage): Promise<string | undefined> {
     const channel = await this.client.channels.fetch(message.chatId);
-    if (!channel || !channel.isTextBased() || !("send" in channel)) return;
+    if (!channel || !channel.isTextBased() || !("send" in channel)) return undefined;
 
     const sendable = channel as any;
 
+    // Edit existing message if editMessageId is set
+    if (message.editMessageId) {
+      try {
+        const existing = await sendable.messages.fetch(message.editMessageId);
+        if (existing) {
+          const payload = message.embed
+            ? { embeds: [message.embed], content: "" }
+            : { content: message.text, embeds: [] };
+          await existing.edit(payload);
+          return message.editMessageId;
+        }
+      } catch {
+        // Message might have been deleted, fall through to send new
+      }
+    }
+
     // Send embed if provided
     if (message.embed) {
-      await sendable.send({ embeds: [message.embed] });
-      return;
+      const sent = await sendable.send({ embeds: [message.embed] });
+      return sent?.id;
     }
 
     // Plain text with smart splitting at newlines
     const text = message.text;
     if (text.length <= 2000) {
-      await sendable.send(text);
+      const sent = await sendable.send(text);
+      return sent?.id;
     } else {
+      let lastId: string | undefined;
       for (const chunk of smartSplit(text, 2000)) {
-        await sendable.send(chunk);
+        const sent = await sendable.send(chunk);
+        lastId = sent?.id;
       }
+      return lastId;
     }
   }
 

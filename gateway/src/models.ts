@@ -23,6 +23,12 @@ export interface OutboundMessage {
   chatId: string;
   text: string;
   embed?: any;  // discord.js EmbedBuilder -- typed as any to stay adapter-agnostic
+  editMessageId?: string;  // if set, edit this message instead of sending a new one
+}
+
+/** Result from sending a message -- includes the platform message ID for later editing. */
+export interface SentMessage {
+  messageId: string;
 }
 
 export type ResponseType = "greeting" | "help" | "agent_list" | "status" | "run_started" | "input_prompt" | "error" | "plain";

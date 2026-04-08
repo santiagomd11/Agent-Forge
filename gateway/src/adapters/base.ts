@@ -11,7 +11,7 @@ export interface ChannelAdapter {
   readonly name: string;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  sendMessage(message: OutboundMessage): Promise<void>;
+  sendMessage(message: OutboundMessage): Promise<string | undefined>;
   registerHandler(handler: MessageHandler): void;
   /** Let the adapter know about active sessions so it can forward follow-ups. */
   setSessionChecker?(checker: SessionChecker): void;

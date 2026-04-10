@@ -302,6 +302,48 @@ class TestComputerUseSetupService:
             assert cu_setup._python_command() == "python3"
 
 
+class TestEnsureDaemonDeps:
+    """Tests for _ensure_daemon_deps: install mss on Windows Python before daemon launch."""
+
+    def test_skips_install_when_mss_already_present(self):
+        """If mss is already importable on Windows Python, skip pip install."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 0
+            cu_setup._ensure_daemon_deps("C:\\Python312\\python.exe")
+            # Only one call: the import check. No pip install.
+            assert mock_run.call_count == 1
+            assert "import mss" in mock_run.call_args_list[0][0][0][-1]
+
+    def test_installs_mss_when_missing(self):
+        """If mss import fails, pip install mss on Windows Python."""
+        with patch("subprocess.run") as mock_run:
+            # First call (import check) fails, second call (pip install) succeeds
+            fail_result = type("R", (), {"returncode": 1})()
+            ok_result = type("R", (), {"returncode": 0})()
+            mock_run.side_effect = [fail_result, ok_result]
+            cu_setup._ensure_daemon_deps("C:\\Python312\\python.exe")
+            assert mock_run.call_count == 2
+            pip_cmd = mock_run.call_args_list[1][0][0][-1]
+            assert "pip install" in pip_cmd
+            assert "mss" in pip_cmd
+
+    def test_handles_import_check_exception(self):
+        """If the import check subprocess itself throws, still try pip install."""
+        with patch("subprocess.run") as mock_run:
+            ok_result = type("R", (), {"returncode": 0})()
+            mock_run.side_effect = [OSError("no powershell"), ok_result]
+            cu_setup._ensure_daemon_deps("C:\\Python312\\python.exe")
+            assert mock_run.call_count == 2
+
+    def test_handles_pip_install_exception(self):
+        """If pip install throws, log warning but don't crash."""
+        with patch("subprocess.run") as mock_run:
+            fail_result = type("R", (), {"returncode": 1})()
+            mock_run.side_effect = [fail_result, OSError("pip failed")]
+            # Should not raise
+            cu_setup._ensure_daemon_deps("C:\\Python312\\python.exe")
+
+
 class TestMcpServerName:
     """MCP server names must be prefixed with 'vadgr-' to avoid conflicts with CLI built-in names."""
 

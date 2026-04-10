@@ -249,6 +249,34 @@ def _find_windows_python() -> str | None:
     return None
 
 
+def _ensure_daemon_deps(win_python: str) -> None:
+    """Install daemon dependencies (mss) on the Windows-side Python if missing."""
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe", "-NoProfile", "-Command",
+                f'& "{win_python}" -c "import mss"',
+            ],
+            capture_output=True, timeout=15,
+        )
+        if result.returncode == 0:
+            return
+    except Exception:
+        pass
+
+    logger.info("Installing mss on Windows Python...")
+    try:
+        subprocess.run(
+            [
+                "powershell.exe", "-NoProfile", "-Command",
+                f'& "{win_python}" -m pip install --quiet mss',
+            ],
+            capture_output=True, timeout=60,
+        )
+    except Exception as e:
+        logger.warning("Failed to install mss on Windows Python: %s", e)
+
+
 def _deploy_and_launch_daemon(win_python: str) -> None:
     bridge_dir = str(PROJECT_ROOT / "computer_use" / "bridge")
     deploy_dir = _get_windows_userprofile()
@@ -261,6 +289,9 @@ def _deploy_and_launch_daemon(win_python: str) -> None:
         src = os.path.join(bridge_dir, fname)
         if os.path.exists(src):
             shutil.copy2(src, os.path.join(deploy_dir, fname))
+
+    # Install mss on Windows Python before launching
+    _ensure_daemon_deps(win_python)
 
     # Convert to Windows path
     try:

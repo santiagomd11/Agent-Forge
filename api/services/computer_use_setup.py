@@ -249,32 +249,78 @@ def _find_windows_python() -> str | None:
     return None
 
 
-def _ensure_daemon_deps(win_python: str) -> None:
-    """Install daemon dependencies (mss) on the Windows-side Python if missing."""
+def _check_win_python_module(win_python: str, module: str) -> bool:
+    """Check if a module is importable on the Windows-side Python."""
     try:
         result = subprocess.run(
             [
                 "powershell.exe", "-NoProfile", "-Command",
-                f'& "{win_python}" -c "import mss"',
+                f'& "{win_python}" -c "import {module}"',
             ],
-            capture_output=True, timeout=15,
+            capture_output=True, text=True, timeout=15,
         )
-        if result.returncode == 0:
-            return
+        return result.returncode == 0
     except Exception:
-        pass
+        return False
 
-    logger.info("Installing mss on Windows Python...")
+
+# Packages the Windows daemon needs beyond stdlib.
+# daemon.py imports mss (screenshots) and PIL (JPEG conversion).
+_DAEMON_DEPS = ["mss", "Pillow"]
+_DAEMON_IMPORT_NAMES = {"Pillow": "PIL"}  # pip name -> import name
+
+
+def _ensure_daemon_deps(win_python: str) -> bool:
+    """Install daemon dependencies on the Windows-side Python.
+
+    Returns True if all deps are importable after this call.
+    """
+    missing = []
+    for pkg in _DAEMON_DEPS:
+        mod = _DAEMON_IMPORT_NAMES.get(pkg, pkg)
+        if not _check_win_python_module(win_python, mod):
+            missing.append(pkg)
+
+    if not missing:
+        return True
+
+    logger.info(
+        "Installing daemon deps on Windows Python (%s): %s",
+        win_python, ", ".join(missing),
+    )
     try:
-        subprocess.run(
+        result = subprocess.run(
             [
                 "powershell.exe", "-NoProfile", "-Command",
-                f'& "{win_python}" -m pip install --quiet mss',
+                f'& "{win_python}" -m pip install {" ".join(missing)}',
             ],
-            capture_output=True, timeout=60,
+            capture_output=True, text=True, timeout=120,
         )
+        if result.returncode != 0:
+            logger.warning(
+                "pip install failed (exit %d): %s",
+                result.returncode, result.stderr.strip(),
+            )
     except Exception as e:
-        logger.warning("Failed to install mss on Windows Python: %s", e)
+        logger.warning("Failed to install daemon deps: %s", e)
+
+    # Verify everything is importable
+    still_missing = []
+    for pkg in _DAEMON_DEPS:
+        mod = _DAEMON_IMPORT_NAMES.get(pkg, pkg)
+        if not _check_win_python_module(win_python, mod):
+            still_missing.append(pkg)
+
+    if still_missing:
+        logger.error(
+            "Daemon deps not available on Windows Python (%s): %s. "
+            "Screenshots will fail. Install manually in PowerShell: "
+            "%s -m pip install %s",
+            win_python, ", ".join(still_missing),
+            win_python, " ".join(still_missing),
+        )
+        return False
+    return True
 
 
 def _deploy_and_launch_daemon(win_python: str) -> None:
@@ -290,8 +336,9 @@ def _deploy_and_launch_daemon(win_python: str) -> None:
         if os.path.exists(src):
             shutil.copy2(src, os.path.join(deploy_dir, fname))
 
-    # Install mss on Windows Python before launching
-    _ensure_daemon_deps(win_python)
+    if not _ensure_daemon_deps(win_python):
+        logger.warning("Skipping daemon launch -- mss not available")
+        return
 
     # Convert to Windows path
     try:
@@ -455,14 +502,12 @@ def enable_computer_use(cache_enabled: bool = True) -> dict:
         )
         _write_deps_marker()
 
-    # Manage daemon on WSL2
+    # Manage daemon on WSL2: always redeploy to ensure latest code + deps.
+    # A stale daemon (e.g. from before a reinstall) would still respond to
+    # ping but fail on screenshot because it lacks mss.
     if _is_wsl2():
-        state = _probe_daemon()
-        if state == "degraded":
-            _stop_daemon()
-            _start_daemon()
-        elif state == "stopped":
-            _start_daemon()
+        _stop_daemon()
+        _start_daemon()
 
     # Write MCP configs for all providers
     _write_all_provider_configs(cache_enabled=cache_enabled)

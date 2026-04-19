@@ -26,7 +26,7 @@ CODEX_GLOBAL_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
 CU_VENV_DIR = PROJECT_ROOT / ".cu_venv"
 # vadgr-computer-use is installed from PyPI. Pin the version expected for this
 # release of vadgr-forge. Bump alongside vadgr-forge releases.
-CU_PACKAGE_SPEC = "vadgr-computer-use[vision]>=0.1.0,<0.2.0"
+CU_PACKAGE_SPEC = "vadgr-computer-use>=0.1.0,<0.2.0"
 DEPS_MARKER = ".deps_installed"
 
 # MCP server name -- prefixed with "vadgr-" to avoid conflicts with CLI

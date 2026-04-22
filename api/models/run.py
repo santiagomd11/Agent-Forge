@@ -5,10 +5,10 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
-from .common import RunStatus, AgentRunStatus
+from .common import RunStatus, AgentRunStatus, StrictBody
 
 
-class RunCreate(BaseModel):
+class RunCreate(StrictBody):
     inputs: dict[str, Any] = {}
 
 

@@ -1,8 +1,8 @@
 """Settings routes for experimental features."""
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from api.models.common import StrictBody
 from api.services.computer_use_setup import (
     get_status,
     enable_computer_use,
@@ -16,9 +16,7 @@ from api.services.gateway_setup import (
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
-class ComputerUseUpdate(BaseModel):
-    model_config = {"extra": "forbid"}
-
+class ComputerUseUpdate(StrictBody):
     enabled: bool
 
 
@@ -36,7 +34,7 @@ async def update_computer_use(body: ComputerUseUpdate):
     return result
 
 
-class DiscordUpdate(BaseModel):
+class DiscordUpdate(StrictBody):
     enabled: bool
     token: str | None = None
 

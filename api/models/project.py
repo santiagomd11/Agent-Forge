@@ -5,31 +5,33 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from .common import StrictBody
 
-class ProjectCreate(BaseModel):
+
+class ProjectCreate(StrictBody):
     name: str = Field(min_length=1, max_length=200)
     description: str = ""
 
 
-class ProjectUpdate(BaseModel):
+class ProjectUpdate(StrictBody):
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     description: Optional[str] = None
 
 
-class NodeCreate(BaseModel):
+class NodeCreate(StrictBody):
     agent_id: str
     config: dict[str, Any] = {}
     position_x: float = 0.0
     position_y: float = 0.0
 
 
-class NodeUpdate(BaseModel):
+class NodeUpdate(StrictBody):
     config: Optional[dict[str, Any]] = None
     position_x: Optional[float] = None
     position_y: Optional[float] = None
 
 
-class EdgeCreate(BaseModel):
+class EdgeCreate(StrictBody):
     source_node_id: str
     target_node_id: str
     source_output: str

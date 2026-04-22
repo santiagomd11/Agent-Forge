@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .common import AgentType
+from .common import AgentType, StrictBody
 
 
 class SchemaField(BaseModel):
@@ -42,7 +42,7 @@ def _normalize_steps(steps: list) -> list[StepDefinition]:
     return result
 
 
-class AgentCreate(BaseModel):
+class AgentCreate(StrictBody):
     name: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=10000)
     steps: list[Union[str, StepDefinition]] = []
@@ -66,7 +66,7 @@ class AgentCreate(BaseModel):
             object.__setattr__(self, "computer_use", True)
 
 
-class AgentUpdate(BaseModel):
+class AgentUpdate(StrictBody):
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     description: Optional[str] = Field(default=None, max_length=10000)
     status: Optional[str] = None
@@ -108,7 +108,7 @@ class Agent(BaseModel):
         return _normalize_steps(v) if v else []
 
 
-class AgentRunRequest(BaseModel):
+class AgentRunRequest(StrictBody):
     inputs: dict[str, Any] = {}
     provider: Optional[str] = None
     model: Optional[str] = None
